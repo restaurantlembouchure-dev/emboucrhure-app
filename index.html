@@ -1,0 +1,2037 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="L'Embouchure">
+<meta name="theme-color" content="#1a1a2e">
+<title>L'Embouchure — Gestion Service</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d14;
+    --surface: #16161f;
+    --surface2: #1e1e2a;
+    --surface3: #252535;
+    --border: rgba(255,255,255,0.07);
+    --accent: #e8a045;
+    --accent2: #5b8dee;
+    --accent3: #3ecf8e;
+    --danger: #e05c5c;
+    --warn: #e8a045;
+    --text: #f0f0f5;
+    --text2: rgba(240,240,245,0.55);
+    --text3: rgba(240,240,245,0.3);
+    --radius: 14px;
+    --radius-sm: 8px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.5;
+    overflow: hidden;
+  }
+
+  /* ===== LAYOUT ===== */
+  #app {
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .screen {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+  .screen.active { display: flex; }
+
+  /* ===== TOP BAR ===== */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    safe-area-inset-top: env(safe-area-inset-top);
+  }
+  .topbar-title {
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: -0.3px;
+  }
+  .topbar-back {
+    background: var(--surface3);
+    border: none;
+    color: var(--text2);
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: var(--font-body);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .topbar-back:active { opacity: 0.7; }
+
+  /* ===== SCROLL AREA ===== */
+  .scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 18px;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  }
+
+  /* ===== LOGIN ===== */
+  #screen-login {
+    background: radial-gradient(ellipse at 30% 20%, rgba(232,160,69,0.12) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 80%, rgba(91,141,238,0.08) 0%, transparent 50%),
+                var(--bg);
+    justify-content: center;
+    align-items: center;
+    padding: 32px 24px;
+  }
+  .login-logo {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .login-logo-badge {
+    width: 110px; height: 110px;
+    background: #fff;
+    border-radius: 24px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+    box-shadow: 0 12px 40px rgba(232,160,69,0.3);
+    overflow: hidden;
+    padding: 8px;
+  }
+  .login-logo-badge img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+  }
+  .login-logo h1 {
+    font-family: var(--font-head);
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .login-logo p { color: var(--text2); font-size: 13px; margin-top: 4px; }
+
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: var(--shadow);
+  }
+  .login-tabs {
+    display: flex;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 3px;
+    margin-bottom: 24px;
+  }
+  .login-tab {
+    flex: 1; padding: 8px; text-align: center;
+    border-radius: 6px; cursor: pointer;
+    font-size: 13px; font-weight: 500;
+    color: var(--text2); transition: all 0.2s;
+    border: none; background: transparent; font-family: var(--font-body);
+  }
+  .login-tab.active {
+    background: var(--accent); color: #fff;
+    box-shadow: 0 2px 8px rgba(232,160,69,0.4);
+  }
+
+  /* ===== FORM ELEMENTS ===== */
+  .form-group { margin-bottom: 16px; }
+  .form-label {
+    display: block; font-size: 12px; font-weight: 500;
+    color: var(--text2); margin-bottom: 6px; letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: var(--font-body);
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  .form-input:focus, .form-select:focus { border-color: var(--accent); }
+  .form-select option { background: var(--surface2); }
+  .form-textarea { resize: vertical; min-height: 80px; }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    width: 100%; padding: 14px;
+    border: none; border-radius: var(--radius-sm);
+    font-size: 15px; font-weight: 600;
+    cursor: pointer; font-family: var(--font-body);
+    transition: all 0.15s; display: flex;
+    align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 16px rgba(232,160,69,0.35); }
+  .btn-primary:active { background: #c97820; }
+  .btn-secondary { background: var(--surface3); color: var(--text); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-success { background: var(--accent3); color: #fff; }
+  .btn-blue { background: var(--accent2); color: #fff; }
+  .btn-sm { padding: 8px 14px; font-size: 13px; width: auto; }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text2);
+  }
+
+  /* ===== HOME SCREEN ===== */
+  .home-header {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 18px;
+    flex-shrink: 0;
+  }
+  .home-greeting {
+    font-family: var(--font-head);
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+  .home-greeting span { color: var(--accent); }
+  .home-meta {
+    display: flex; gap: 12px; margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .home-chip {
+    background: var(--surface3);
+    border-radius: 20px; padding: 4px 12px;
+    font-size: 12px; color: var(--text2);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .home-chip.accent { background: rgba(232,160,69,0.15); color: var(--accent); }
+  .home-chip.green { background: rgba(62,207,142,0.12); color: var(--accent3); }
+
+  /* ===== MENU GRID ===== */
+  .menu-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .menu-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    text-align: left;
+    border: none;
+  }
+  .menu-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--card-accent, var(--accent));
+  }
+  .menu-card:active { transform: scale(0.97); }
+  .menu-card-icon { font-size: 28px; margin-bottom: 10px; display: block; }
+  .menu-card-label {
+    font-family: var(--font-head);
+    font-size: 13px; font-weight: 700;
+    color: var(--text); line-height: 1.3;
+  }
+  .menu-card-desc { font-size: 11px; color: var(--text2); margin-top: 4px; }
+  .menu-card-badge {
+    position: absolute; top: 10px; right: 10px;
+    background: var(--danger);
+    color: #fff; font-size: 10px; font-weight: 700;
+    border-radius: 10px; padding: 2px 6px;
+  }
+
+  /* ===== SECTION TITLE ===== */
+  .section-title {
+    font-family: var(--font-head);
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase;
+    color: var(--text3); margin-bottom: 12px;
+    margin-top: 4px;
+  }
+
+  /* ===== HISTORY LIST ===== */
+  .hist-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 12px;
+    transition: background 0.15s;
+  }
+  .hist-item:active { background: var(--surface2); }
+  .hist-icon {
+    width: 36px; height: 36px;
+    background: var(--surface3);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .hist-info { flex: 1; min-width: 0; }
+  .hist-title { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hist-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .hist-arrow { color: var(--text3); font-size: 18px; }
+
+  /* ===== CHECK ITEM ===== */
+  .check-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .check-item.done { opacity: 0.5; }
+  .check-item.done .check-label { text-decoration: line-through; }
+  .check-box {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    background: var(--surface2);
+    flex-shrink: 0; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .check-box.checked { background: var(--accent3); border-color: var(--accent3); }
+  .check-label { flex: 1; font-size: 14px; }
+
+  /* ===== PRODUCT ROW ===== */
+  .product-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .product-row.low-stock { border-left: 3px solid var(--danger); }
+  .product-row.ok-stock { border-left: 3px solid var(--accent3); }
+  .product-name { flex: 1; font-size: 14px; font-weight: 500; }
+  .product-qty {
+    background: var(--surface3);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text2);
+  }
+
+  /* ===== QTY INPUT ===== */
+  .qty-input {
+    width: 70px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 8px;
+    color: var(--text);
+    font-size: 14px;
+    text-align: center;
+    outline: none;
+    font-family: var(--font-body);
+  }
+  .qty-input:focus { border-color: var(--accent); }
+
+  /* ===== BADGE ===== */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge-warn { background: rgba(232,160,69,0.2); color: var(--accent); }
+  .badge-ok { background: rgba(62,207,142,0.15); color: var(--accent3); }
+  .badge-danger { background: rgba(224,92,92,0.15); color: var(--danger); }
+  .badge-blue { background: rgba(91,141,238,0.15); color: var(--accent2); }
+
+  /* ===== DIVIDER ===== */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+  /* ===== ALERT BOX ===== */
+  .alert {
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .alert-info { background: rgba(91,141,238,0.12); color: var(--accent2); border: 1px solid rgba(91,141,238,0.2); }
+  .alert-warn { background: rgba(232,160,69,0.12); color: var(--accent); border: 1px solid rgba(232,160,69,0.2); }
+  .alert-success { background: rgba(62,207,142,0.1); color: var(--accent3); border: 1px solid rgba(62,207,142,0.2); }
+
+  /* ===== ADMIN NAV ===== */
+  .admin-tabs {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    flex-shrink: 0;
+    scrollbar-width: none;
+  }
+  .admin-tabs::-webkit-scrollbar { display: none; }
+  .admin-tab {
+    flex-shrink: 0; padding: 12px 16px;
+    font-size: 12px; font-weight: 600;
+    color: var(--text2); cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap; transition: all 0.15s;
+    background: transparent; border-left: none;
+    border-top: none; border-right: none;
+    font-family: var(--font-body);
+  }
+  .admin-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none; align-items: flex-end;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-sheet {
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    width: 100%; max-height: 85vh;
+    display: flex; flex-direction: column;
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .modal-handle {
+    width: 40px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 12px auto 0;
+  }
+  .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-family: var(--font-head); font-size: 17px; font-weight: 700; }
+  .modal-close {
+    background: var(--surface3); border: none;
+    width: 28px; height: 28px;
+    border-radius: 50%; cursor: pointer;
+    color: var(--text2); font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-body {
+    padding: 18px 20px;
+    overflow-y: auto;
+    flex: 1;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ===== TOAST ===== */
+  #toast {
+    position: fixed;
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--surface3);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 20px;
+    font-size: 13px; font-weight: 500;
+    z-index: 2000;
+    white-space: nowrap;
+    transition: transform 0.3s ease, opacity 0.3s;
+    opacity: 0;
+    box-shadow: var(--shadow);
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* ===== TEMP GAUGE ===== */
+  .temp-input-group {
+    display: flex; gap: 8px; align-items: center;
+    margin-bottom: 8px;
+  }
+  .temp-label { flex: 1; font-size: 14px; }
+  .temp-value {
+    background: var(--surface3);
+    border-radius: 6px; padding: 6px 10px;
+    font-size: 14px; font-weight: 600;
+    min-width: 60px; text-align: center;
+  }
+  .temp-ok { color: var(--accent3); }
+  .temp-warn { color: var(--warn); }
+  .temp-bad { color: var(--danger); }
+
+  /* ===== STEP INDICATOR ===== */
+  .step-indicator {
+    display: flex; gap: 6px; margin-bottom: 20px;
+    justify-content: center;
+  }
+  .step-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--surface3);
+    transition: all 0.2s;
+  }
+  .step-dot.active { background: var(--accent); width: 20px; border-radius: 4px; }
+  .step-dot.done { background: var(--accent3); }
+
+  /* ===== URGENCE FLAG ===== */
+  .urgence-row {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(224,92,92,0.08);
+    border: 1px solid rgba(224,92,92,0.2);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+  .urgence-label { flex: 1; font-size: 13px; color: var(--danger); font-weight: 500; }
+
+  /* ===== STAT CARD ===== */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+  }
+  .stat-val { font-family: var(--font-head); font-size: 24px; font-weight: 800; }
+  .stat-label { font-size: 11px; color: var(--text2); margin-top: 4px; }
+
+  /* ===== LOADING ===== */
+  .loading-spinner {
+    width: 24px; height: 24px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-state {
+    text-align: center; padding: 40px 20px; color: var(--text3);
+  }
+  .empty-state-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state-text { font-size: 14px; }
+
+  /* safe area padding for notch */
+  .safe-top { padding-top: env(safe-area-inset-top); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ===== LOGIN ===== -->
+  <div id="screen-login" class="screen active">
+    <div class="login-logo">
+      <div class="login-logo-badge"><img src="data:image/png;base64,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" alt="L'Embouchure"></div>
+      <h1>L'Embouchure</h1>
+      <p>Gestion & Suivi de Service</p>
+    </div>
+    <div class="login-card">
+      <div class="login-tabs">
+        <button class="login-tab active" onclick="setLoginMode('staff')">👤 Personnel</button>
+        <button class="login-tab" onclick="setLoginMode('admin')">🔑 Manager</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Prénom</label>
+        <input id="login-name" class="form-input" type="text" placeholder="Votre prénom" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <input id="login-pass" class="form-input" type="password" placeholder="••••••••">
+      </div>
+      <button class="btn btn-primary" onclick="doLogin()">Se connecter →</button>
+      <div id="login-error" style="color:var(--danger);font-size:12px;margin-top:10px;text-align:center;display:none;">
+        Prénom ou mot de passe incorrect.
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STAFF HOME ===== -->
+  <div id="screen-home" class="screen">
+    <div class="home-header">
+      <div class="home-greeting">
+        Bonjour, <span id="home-name">Chef</span> ! 👋
+      </div>
+      <div style="font-size:13px;color:var(--text2);margin-top:6px;" id="home-date"></div>
+      <div class="home-meta">
+        <div class="home-chip accent">🍽️ <span id="home-couvert-midi">— couverts midi</span></div>
+        <div class="home-chip green">🌙 <span id="home-couvert-soir">— couverts soir</span></div>
+      </div>
+      <div style="font-size:12px;color:var(--text2);margin-top:8px;font-style:italic;" id="home-wish"></div>
+    </div>
+    <div class="scroll-area">
+      <p class="section-title">Actions</p>
+      <div class="menu-grid">
+        <button class="menu-card" style="--card-accent:var(--danger)" onclick="goTo('verif')">
+          <span class="menu-card-icon">⚠️</span>
+          <div class="menu-card-label">Vérifications arrivée</div>
+          <div class="menu-card-desc">Obligatoires</div>
+          <div class="menu-card-badge" id="verif-badge" style="display:none">!</div>
+        </button>
+        <button class="menu-card" style="--card-accent:var(--accent)" onclick="goTo('mep')">
+          <span class="menu-card-icon">🔪</span>
+          <div class="menu-card-label">Mise en place</div>
+          <div class="menu-card-desc">Frigos + prévisionnel</div>
+        </button>
+        <button class="menu-card" style="--card-accent:var(--accent2)" onclick="goTo('inventaire')">
+          <span class="menu-card-icon">📦</span>
+          <div class="menu-card-label">Inventaire</div>
+          <div class="menu-card-desc">Stock complet</div>
+        </button>
+        <button class="menu-card" style="--card-accent:#a78bfa" onclick="goTo('courses')">
+          <span class="menu-card-icon">🛒</span>
+          <div class="menu-card-label">Liste de courses</div>
+          <div class="menu-card-desc">Commandes</div>
+        </button>
+        <button class="menu-card" style="--card-accent:var(--danger)" onclick="goTo('pertes')">
+          <span class="menu-card-icon">🗑️</span>
+          <div class="menu-card-label">Déclarer pertes</div>
+          <div class="menu-card-desc">Traçabilité</div>
+        </button>
+        <button class="menu-card" style="--card-accent:var(--accent3)" onclick="goTo('fin-service')">
+          <span class="menu-card-icon">🌅</span>
+          <div class="menu-card-label">Fin de service</div>
+          <div class="menu-card-desc">Clôture</div>
+        </button>
+        <button class="menu-card" style="--card-accent:#f472b6" onclick="goTo('add-product')">
+          <span class="menu-card-icon">➕</span>
+          <div class="menu-card-label">Ajouter produit</div>
+          <div class="menu-card-desc">Nouveau stock</div>
+        </button>
+        <button class="menu-card" style="--card-accent:#34d399" onclick="goTo('add-plat')">
+          <span class="menu-card-icon">🍴</span>
+          <div class="menu-card-label">Ajouter plat</div>
+          <div class="menu-card-desc">Carte menu</div>
+        </button>
+      </div>
+
+      <p class="section-title">Historique mise en place</p>
+      <div id="hist-mep-list">
+        <div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">Aucun historique</div></div>
+      </div>
+
+      <p class="section-title" style="margin-top:20px">Historique des actions</p>
+      <div id="hist-actions-list">
+        <div class="empty-state"><div class="empty-state-icon">📜</div><div class="empty-state-text">Aucune action enregistrée</div></div>
+      </div>
+
+      <div style="text-align:center;margin-top:24px">
+        <button class="btn btn-outline btn-sm" onclick="doLogout()">Se déconnecter</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== VERIFICATIONS ARRIVEE ===== -->
+  <div id="screen-verif" class="screen">
+    <div class="topbar">
+      <button class="topbar-back" onclick="goBack()">← Retour</button>
+      <div class="topbar-title">⚠️ Vérifications arrivée</div>
+      <div style="width:70px"></div>
+    </div>
+    <div class="scroll-area">
+      <div class="alert alert-warn">⚠️ Ces vérifications sont obligatoires à chaque prise de service.</div>
+      <p class="section-title">Checklist obligatoire</p>
+      <div id="verif-list"></div>
+      <button class="btn btn-primary" onclick="saveVerif()" style="margin-top:16px">✅ Valider les vérifications</button>
+    </div>
+  </div>
+
+  <!-- ===== MISE EN PLACE ===== -->
+  <div id="screen-mep" class="screen">
+    <div class="topbar">
+      <button class="topbar-back" onclick="goBack()">← Retour</button>
+      <div class="topbar-title">🔪 Mise en place</div>
+      <div style="width:70px"></div>
+    </div>
+    <div class="scroll-area">
+      <div class="step-indicator" id="mep-steps">
+        <div class="step-dot active" id="step0"></div>
+        <div class="step-dot" id="step1"></div>
+        <div class="step-dot" id="step2"></div>
+      </div>
+
+      <!-- Étape 0: Températures frigos -->
+      <div id="mep-step-0">
+        <div class="alert alert-info">📍 Étape 1/3 — Relevé températures & stocks frigos</div>
+        <p class="section-title">Températures frigos</p>
+        <div id="temp-list"></div>
+        <hr class="divider">
+        <p class="section-title">Quantités restantes (frigos)</p>
+        <div id="mep-remaining-list"></div>
+        <button class="btn btn-primary" onclick="mepStep1()" style="margin-top:16px">Générer prévisionnel →</button>
+      </div>
+
+      <!-- Étape 1: Prévisionnel -->
+      <div id="mep-step-1" style="display:none">
+        <div class="alert alert-success">✅ Étape 2/3 — Prévisionnel généré</div>
+        <p class="section-title">Prévisions du jour</p>
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-val" id="prev-midi">—</div>
+            <div class="stat-label">Couverts midi</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="prev-soir">—</div>
+            <div class="stat-label">Couverts soir</div>
+          </div>
+        </div>
+        <p class="section-title">Mise en place recommandée</p>
+        <div id="mep-preview-list"></div>
+        <button class="btn btn-primary" onclick="mepStep2()" style="margin-top:16px">Confirmer →</button>
+      </div>
+
+      <!-- Étape 2: Confirmation -->
+      <div id="mep-step-2" style="display:none">
+        <div class="alert alert-info">📍 Étape 3/3 — Confirmer la mise en place réelle</div>
+        <p class="section-title">Cocher une fois fait + DLC</p>
+        <div id="mep-confirm-list"></div>
+        <button class="btn btn-success" onclick="saveMep()" style="margin-top:16px">💾 Valider mise en place</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== INVENTAIRE ===== -->
+  <div id="screen-inventaire" class="screen">
+    <div class="topbar">
+      <button class="topbar-back" onclick="goBack()">← Retour</button>
+      <div class="topbar-title">📦 Inventaire</div>
+      <div style="width:70px"></div>
+    </div>
+    <div class="scroll-area">
+      <div class="alert alert-info">📋 Saisissez les quantités actuelles. Les produits sous seuil seront ajoutés automatiquement à la liste de courses.</div>
+      <div id="inv-list"></div>
+      <button class="btn btn-primary" onclick="saveInventaire()" style="margin-top:16px">📤 Générer & sauvegarder</button>
+    </div>
+  </div>
+
+  <!-- ===== ADD PRODUCT ===== -->
+  <div id="screen-add-product" class="screen">
+    <div class="topbar">
+      <button class="topbar-back" onclick="goBack()">← Retour</button>
+      <div class="topbar-title">➕ Nouveau produit</div>
+      <div style="width:70px"></div>
+    </div>
+    <div class="scroll-area">
+      <div class="form-group">
+        <label class="form-label">Nom du produit *</label>
+        <input id="new-prod-name" class="form-input" type="text" placeholder="Ex: Filet de bœuf">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Catégorie</label>
+        <select id="new-prod-cat" class="form-select">
+          <option value="viande">Viande</option>
+          <option value="poisson">Poisson</option>
+          <option value="légume">Légume</option>
+          <option value="sauce">Sauce / Condiment</option>
+          <option value="dessert">Dessert</option>
+          <option value="épicerie">Épicerie</option>
+          <option value="boisson">Boisson</option>
+          <option value="autre">Autre</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Unité</label>
+        <select id="new-prod-unit" class="form-select">
+          <option value="kg">kg</option>
+          <option value="g">g</option>
+          <option value="L">L</option>
+          <option value="pièce(s)">pièce(s)</option>
+          <option value="portion(s)">portion(s)</option>
+          <option value="barquette(s)">barquette(s)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Quantité actuelle</label>
+        <input id="new-prod-qty" class="form-input" type="number" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Seuil minimum (alerte liste de courses) *</label>
+        <input id="new-prod-seuil" class="form-input" type="number" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Quantité MEP par défaut</label>
+        <input id="new-prod-mep" class="form-input" type="number" placeholder="0" min="0">
+      </div>
+      <button class="btn btn-primary" onclick="saveNewProduct()">💾 Enregistrer le produit</button>
+    </div>
+  </div>
+
+  <!-- ===== ADD PLAT ===== -->
+  <div id="screen-add-plat" class="screen">
+    <div class="topbar">
+      <button class="topbar-back" onclick="goBack()">← Retour</button>
+      <div class="topbar-title">🍴 Nouveau plat</div>
+      <div style="width:70px"></div>
+    </div>
+    <div class="scroll-area">
+      <div class="form-group">
+        <label class="form-label">Nom du plat *</label>
+        <input id="new-plat-name" class="form-input" type="text" placeholder="Ex: Brochette de bœuf">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Catégorie</label>
+        <select id="new-plat-cat" class="form-select">
+          <option value="entrée">Entrée</option>
+          <option value="viande">Viande</option>
+          <option value="poisson">Poisson</option>
+          <option value="brochette">Brochette</option>
+          <option value="salade">Salade</option>
+          <option value="dessert">Dessert</option>
+          <option value="accompagnement">Accompagnement</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Portions disponibles</label>
+        <input id="new-plat-qty" class="form-input" type="number" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Seuil alerte *</label>
+        <input id="new-plat-seuil" class="form-input" type="number" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Portions MEP par défaut</label>
+        <input id="new-plat-mep" class="form-input" type="number" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Prix (€)</label>
+        <input id="new-plat-prix" class="form-input" type="number" step="0.50" placeholder="0.00">
+      </div>
+      <button class="btn btn-primary" onclick="saveNewPlat()">💾 Enregistrer le plat</button>
+    </div>
+  </div>
+
+  <!-- ===== COURSES ===== -->
+  <div id="screen-courses" class="screen">
+    <div class="topbar">
+      <button class="topbar-back" onclick="goBack()">← Retour</button>
+      <div class="topbar-title">🛒 Liste de courses</div>
+      <div style="width:70px"></div>
+    </div>
+    <div class="scroll-area">
+      <div class="alert alert-info">Cochez les produits à commander et indiquez les quantités.</div>
+      <div id="courses-urgences" style="display:none">
+        <p class="section-title">🔴 Urgences</p>
+        <div id="courses-urgences-list"></div>
+      </div>
+      <p class="section-title">Tous les produits</p>
+      <div id="courses-list"></div>
+      <button class="btn btn-primary" onclick="saveCourses()" style="margin-top:16px">📤 Valider la liste de courses</button>
+    </div>
+  </div>
+
+  <!-- ===== PERTES ===== -->
+  <div id="screen-pertes" class="screen">
+    <div class="topbar">
+      <button class="topbar-back" onclick="goBack()">← Retour</button>
+      <div class="topbar-title">🗑️ Déclarer une perte</div>
+      <div style="width:70px"></div>
+    </div>
+    <div class="scroll-area">
+      <div class="form-group">
+        <label class="form-label">Produit / Plat *</label>
+        <select id="perte-produit" class="form-select" onchange="showPerteQty()">
+          <option value="">-- Sélectionner --</option>
+        </select>
+      </div>
+      <div id="perte-qty-group" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Quantité perdue *</label>
+          <input id="perte-qty" class="form-input" type="number" placeholder="0" min="0.1" step="0.1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Motif (optionnel)</label>
+          <select id="perte-motif" class="form-select">
+            <option value="DLC dépassée">DLC dépassée</option>
+            <option value="Mauvaise conservation">Mauvaise conservation</option>
+            <option value="Accident cuisine">Accident cuisine</option>
+            <option value="Sur-production">Sur-production</option>
+            <option value="Autre">Autre</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Commentaire (optionnel)</label>
+          <input id="perte-comment" class="form-input" type="text" placeholder="Précisions...">
+        </div>
+        <button class="btn btn-danger" onclick="savePerte()">🗑️ Déclarer la perte</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FIN DE SERVICE ===== -->
+  <div id="screen-fin-service" class="screen">
+    <div class="topbar">
+      <button class="topbar-back" onclick="goBack()">← Retour</button>
+      <div class="topbar-title">🌅 Fin de service</div>
+      <div style="width:70px"></div>
+    </div>
+    <div class="scroll-area">
+      <div class="alert alert-warn">🌅 Clôturez le service en renseignant les quantités restantes et les actions effectuées.</div>
+
+      <p class="section-title">Bilan mise en place — quantités restantes</p>
+      <div id="fin-bilan-list"></div>
+
+      <hr class="divider">
+      <p class="section-title">Actions de fin de service</p>
+      <div id="fin-actions-list"></div>
+
+      <button class="btn btn-success" onclick="saveFinService()" style="margin-top:16px">✅ Clôturer le service</button>
+    </div>
+  </div>
+
+  <!-- ===== ADMIN ===== -->
+  <div id="screen-admin" class="screen">
+    <div class="topbar">
+      <button class="topbar-back" onclick="doLogout()">⬅ Déco</button>
+      <div class="topbar-title">🔑 Manager</div>
+      <div style="width:60px;text-align:right;font-size:12px;color:var(--accent)" id="admin-name-label"></div>
+    </div>
+    <div class="admin-tabs">
+      <button class="admin-tab active" onclick="adminTab('dashboard')">📊 Dashboard</button>
+      <button class="admin-tab" onclick="adminTab('personnel')">👥 Personnel</button>
+      <button class="admin-tab" onclick="adminTab('produits')">📦 Produits</button>
+      <button class="admin-tab" onclick="adminTab('rapports')">📋 Rapports</button>
+      <button class="admin-tab" onclick="adminTab('courses-hist')">🛒 Courses</button>
+      <button class="admin-tab" onclick="adminTab('inv-hist')">📦 Inventaires</button>
+      <button class="admin-tab" onclick="adminTab('previsions')">🗓️ Prévisions</button>
+    </div>
+    <div class="scroll-area" id="admin-content">
+      <!-- dynamic -->
+    </div>
+  </div>
+
+  <!-- ===== DETAIL VIEW ===== -->
+  <div id="screen-detail" class="screen">
+    <div class="topbar">
+      <button class="topbar-back" onclick="goBack()">← Retour</button>
+      <div class="topbar-title" id="detail-title">Détail</div>
+      <div style="width:70px"></div>
+    </div>
+    <div class="scroll-area" id="detail-content">
+    </div>
+  </div>
+
+</div><!-- #app -->
+
+<!-- MODAL -->
+<div id="modal-overlay" class="modal-overlay" onclick="closeModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Modal</div>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ============================================================
+// CONFIG — remplacer par votre URL Google Apps Script déployé
+// ============================================================
+const GAS_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+// Pour le mode DEMO (sans backend), mettre USE_DEMO = true
+const USE_DEMO = true;
+
+// ============================================================
+// STATE
+// ============================================================
+let currentUser = null; // { name, role, id }
+let screenStack = ['login'];
+let adminCurrentTab = 'dashboard';
+
+// Demo data
+let demoData = {
+  users: [
+    { id: 1, name: 'Admin', role: 'admin', password: 'admin123' },
+    { id: 2, name: 'Marie', role: 'staff', password: 'marie123' },
+    { id: 3, name: 'Jean', role: 'staff', password: 'jean123' },
+    { id: 4, name: 'Sophie', role: 'staff', password: 'sophie123' },
+  ],
+  products: [
+    { id: 1, name: 'Filet de bœuf', cat: 'viande', unit: 'kg', qty: 3.5, seuil: 2, mep: 1.5 },
+    { id: 2, name: 'Crevettes', cat: 'poisson', unit: 'kg', qty: 1.2, seuil: 1, mep: 0.5 },
+    { id: 3, name: 'Magret de canard', cat: 'viande', unit: 'pièce(s)', qty: 6, seuil: 4, mep: 3 },
+    { id: 4, name: 'Filet de poisson', cat: 'poisson', unit: 'kg', qty: 2, seuil: 1.5, mep: 1 },
+    { id: 5, name: 'Malanga', cat: 'légume', unit: 'kg', qty: 4, seuil: 2, mep: 1 },
+    { id: 6, name: 'Sauce chien', cat: 'sauce', unit: 'L', qty: 0.8, seuil: 1, mep: 0.3 },
+    { id: 7, name: 'Farine', cat: 'épicerie', unit: 'kg', qty: 5, seuil: 2, mep: 0 },
+    { id: 8, name: 'Huile de friture', cat: 'épicerie', unit: 'L', qty: 3, seuil: 2, mep: 0 },
+  ],
+  plats: [
+    { id: 101, name: 'Accras', cat: 'entrée', qty: 20, seuil: 10, mep: 15, prix: 6 },
+    { id: 102, name: 'Brochette bœuf', cat: 'brochette', qty: 8, seuil: 5, mep: 8, prix: 24 },
+    { id: 103, name: 'Salade Cap Est', cat: 'salade', qty: 6, seuil: 4, mep: 6, prix: 16 },
+    { id: 104, name: 'Fondant au chocolat', cat: 'dessert', qty: 10, seuil: 6, mep: 8, prix: 6 },
+    { id: 105, name: 'Gauffres', cat: 'dessert', qty: 12, seuil: 6, mep: 8, prix: 8 },
+  ],
+  previsions: [
+    { date: today(), midi: 30, soir: 45 }
+  ],
+  frigos: ['Frigo 1 — Viandes', 'Frigo 2 — Poissons', 'Frigo 3 — Légumes / Sauces', 'Chambre froide'],
+  verifChecklist: [
+    'Températures frigos conformes (0-4°C)',
+    'Propreté plan de travail et grills',
+    'Stocks gaz / induction OK',
+    'Gants, tabliers, EPI disponibles',
+    'Plonge propre et approvisionnée',
+    'Bacs gastro propres et disponibles',
+    'Affichage allergènes à jour',
+    'Livre de températures signé',
+  ],
+  finServiceActions: [
+    'Filmer les produits (film alimentaire)',
+    'Étiquetage DLC sur tous les produits',
+    'Nettoyage complet de la cuisine',
+    'Sortir les poubelles',
+    'Remplir PMS (Plan de Maîtrise Sanitaire)',
+  ],
+  histMep: [
+    { id: 1, date: '2024-01-15 09:30', by: 'Marie', items: [{ name: 'Accras', qty: 20, dlc: '2024-01-15' }, { name: 'Brochette bœuf', qty: 8, dlc: '2024-01-15' }] },
+    { id: 2, date: '2024-01-14 09:15', by: 'Jean', items: [{ name: 'Accras', qty: 18, dlc: '2024-01-14' }, { name: 'Salade Cap Est', qty: 6, dlc: '2024-01-14' }] },
+  ],
+  histActions: [
+    { id: 1, ts: '2024-01-15 11:45', user: 'Marie', action: 'Inventaire', detail: 'Inventaire complet effectué' },
+    { id: 2, ts: '2024-01-15 09:30', user: 'Marie', action: 'Mise en place', detail: '8 produits mis en place' },
+    { id: 3, ts: '2024-01-14 18:00', user: 'Jean', action: 'Fin de service', detail: 'Clôture service soir' },
+  ],
+  histCourses: [],
+  histInventaires: [],
+  histPertes: [],
+};
+
+function today() {
+  return new Date().toISOString().split('T')[0];
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function showToast(msg, dur = 2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+function fmtDate(d) {
+  const dt = new Date(d);
+  return dt.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+function fmtDateShort(d) {
+  const dt = new Date(d);
+  return dt.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+}
+
+function nowTs() {
+  return new Date().toLocaleString('fr-FR');
+}
+
+function openModal(title, html) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModalDirect();
+}
+function closeModalDirect() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function goTo(screen) {
+  const s = 'screen-' + screen;
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  document.getElementById(s).classList.add('active');
+  screenStack.push(screen);
+  // Init screen
+  if (screen === 'home') initHome();
+  if (screen === 'verif') initVerif();
+  if (screen === 'mep') initMep();
+  if (screen === 'inventaire') initInventaire();
+  if (screen === 'courses') initCourses();
+  if (screen === 'pertes') initPertes();
+  if (screen === 'fin-service') initFinService();
+  if (screen === 'add-product') clearAddProduct();
+  if (screen === 'add-plat') clearAddPlat();
+  if (screen === 'admin') initAdmin();
+}
+
+function goBack() {
+  screenStack.pop();
+  const prev = screenStack[screenStack.length - 1] || 'login';
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  document.getElementById('screen-' + prev).classList.add('active');
+  if (prev === 'home') initHome();
+  if (prev === 'admin') initAdmin();
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+let loginMode = 'staff';
+function setLoginMode(m) {
+  loginMode = m;
+  document.querySelectorAll('.login-tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && m === 'staff') || (i === 1 && m === 'admin'));
+  });
+}
+
+function doLogin() {
+  const name = document.getElementById('login-name').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+
+  if (USE_DEMO) {
+    const user = demoData.users.find(u =>
+      u.name.toLowerCase() === name.toLowerCase() &&
+      u.password === pass &&
+      (loginMode === 'admin' ? u.role === 'admin' : u.role === 'staff')
+    );
+    if (user) {
+      currentUser = user;
+      errEl.style.display = 'none';
+      screenStack = [];
+      if (user.role === 'admin') {
+        goTo('admin');
+      } else {
+        goTo('home');
+      }
+    } else {
+      errEl.style.display = 'block';
+    }
+  } else {
+    apiCall('login', { name, pass, role: loginMode }, (res) => {
+      if (res.ok) {
+        currentUser = res.user;
+        screenStack = [];
+        if (currentUser.role === 'admin') goTo('admin');
+        else goTo('home');
+      } else {
+        errEl.style.display = 'block';
+      }
+    });
+  }
+}
+
+function doLogout() {
+  currentUser = null;
+  screenStack = ['login'];
+  document.getElementById('login-name').value = '';
+  document.getElementById('login-pass').value = '';
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  document.getElementById('screen-login').classList.add('active');
+}
+
+// ============================================================
+// HOME
+// ============================================================
+function initHome() {
+  const now = new Date();
+  const opts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+  const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  document.getElementById('home-name').textContent = currentUser.name;
+  document.getElementById('home-date').textContent =
+    now.toLocaleDateString('fr-FR', opts) + ' — ' + time;
+
+  const prev = demoData.previsions.find(p => p.date === today()) || { midi: '—', soir: '—' };
+  document.getElementById('home-couvert-midi').textContent = prev.midi + ' couverts midi';
+  document.getElementById('home-couvert-soir').textContent = prev.soir + ' couverts soir';
+
+  const hour = now.getHours();
+  const wishes = [
+    'Bonne mise en place et bon service ! 🔥',
+    'Excellente journée à toute l\'équipe ! ⭐',
+    'On assure aujourd\'hui ! 💪',
+    'Le service sera parfait, c\'est certain ! 🍽️',
+  ];
+  document.getElementById('home-wish').textContent = wishes[hour % wishes.length];
+
+  // Hist MEP
+  const listEl = document.getElementById('hist-mep-list');
+  if (demoData.histMep.length === 0) {
+    listEl.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">Aucun historique</div></div>';
+  } else {
+    listEl.innerHTML = demoData.histMep.slice(0, 5).map(h => `
+      <div class="hist-item" onclick="showMepDetail(${h.id})">
+        <div class="hist-icon">🔪</div>
+        <div class="hist-info">
+          <div class="hist-title">${h.date}</div>
+          <div class="hist-sub">${h.by} — ${h.items.length} produits</div>
+        </div>
+        <div class="hist-arrow">›</div>
+      </div>`).join('');
+  }
+
+  // Hist Actions
+  const actEl = document.getElementById('hist-actions-list');
+  if (demoData.histActions.length === 0) {
+    actEl.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📜</div><div class="empty-state-text">Aucune action</div></div>';
+  } else {
+    actEl.innerHTML = demoData.histActions.slice(0, 8).map(a => `
+      <div class="hist-item" onclick="showActionDetail(${a.id})">
+        <div class="hist-icon">${actionIcon(a.action)}</div>
+        <div class="hist-info">
+          <div class="hist-title">${a.action}</div>
+          <div class="hist-sub">${a.user} — ${a.ts}</div>
+        </div>
+        <div class="hist-arrow">›</div>
+      </div>`).join('');
+  }
+}
+
+function actionIcon(a) {
+  const m = { 'Mise en place': '🔪', 'Inventaire': '📦', 'Fin de service': '🌅', 'Liste de courses': '🛒', 'Perte': '🗑️', 'Vérifications': '✅' };
+  return m[a] || '📌';
+}
+
+function showMepDetail(id) {
+  const h = demoData.histMep.find(x => x.id === id);
+  if (!h) return;
+  const html = `
+    <div class="alert alert-info">🔪 MEP du ${h.date} par ${h.by}</div>
+    ${h.items.map(it => `
+      <div class="product-row ok-stock">
+        <div class="product-name">${it.name}</div>
+        <div class="product-qty">${it.qty}</div>
+        <div class="badge badge-ok">DLC: ${fmtDateShort(it.dlc)}</div>
+      </div>`).join('')}`;
+  document.getElementById('detail-title').textContent = '🔪 Détail MEP';
+  document.getElementById('detail-content').innerHTML = html;
+  goTo('detail');
+}
+
+function showActionDetail(id) {
+  const a = demoData.histActions.find(x => x.id === id);
+  if (!a) return;
+  const html = `
+    <div class="product-row">
+      <div class="product-name">${a.action}</div>
+    </div>
+    <div class="alert alert-info">
+      👤 ${a.user}<br>🕐 ${a.ts}<br>📝 ${a.detail}
+    </div>`;
+  document.getElementById('detail-title').textContent = '📌 Détail action';
+  document.getElementById('detail-content').innerHTML = html;
+  goTo('detail');
+}
+
+// ============================================================
+// VERIFICATIONS ARRIVEE
+// ============================================================
+function initVerif() {
+  const el = document.getElementById('verif-list');
+  el.innerHTML = demoData.verifChecklist.map((v, i) => `
+    <div class="check-item" id="verif-item-${i}">
+      <div class="check-box" id="cb-verif-${i}" onclick="toggleCheck('verif',${i})"></div>
+      <div class="check-label">${v}</div>
+    </div>`).join('');
+}
+
+function toggleCheck(prefix, i) {
+  const box = document.getElementById(`cb-${prefix}-${i}`);
+  const item = document.getElementById(`${prefix}-item-${i}`);
+  box.classList.toggle('checked');
+  item.classList.toggle('done');
+}
+
+function saveVerif() {
+  const total = demoData.verifChecklist.length;
+  const done = document.querySelectorAll('#verif-list .check-box.checked').length;
+  if (done < total) {
+    if (!confirm(`Seulement ${done}/${total} vérifications cochées. Confirmer quand même ?`)) return;
+  }
+  logAction('Vérifications', `${done}/${total} vérifications effectuées`);
+  showToast(`✅ Vérifications enregistrées (${done}/${total})`);
+  goBack();
+}
+
+// ============================================================
+// MISE EN PLACE
+// ============================================================
+let mepCurrentStep = 0;
+let mepRemainingQtys = {};
+let mepTempValues = {};
+let mepConfirmData = {};
+
+function initMep() {
+  mepCurrentStep = 0;
+  mepRemainingQtys = {};
+  mepTempValues = {};
+  mepConfirmData = {};
+  updateMepStep(0);
+
+  // Temp frigos
+  const tempEl = document.getElementById('temp-list');
+  tempEl.innerHTML = demoData.frigos.map((f, i) => `
+    <div class="temp-input-group">
+      <div class="temp-label">${f}</div>
+      <input type="number" class="qty-input" id="temp-${i}" placeholder="°C" step="0.5"
+        onchange="checkTemp(${i})" style="width:80px">
+    </div>`).join('');
+
+  // Remaining stocks
+  const remEl = document.getElementById('mep-remaining-list');
+  const allItems = [...demoData.products, ...demoData.plats];
+  remEl.innerHTML = allItems.map(p => `
+    <div class="product-row">
+      <div class="product-name">${p.name} <span style="font-size:11px;color:var(--text3)">${p.unit || 'portions'}</span></div>
+      <input type="number" class="qty-input" id="rem-${p.id}" placeholder="0" min="0" step="0.5"
+        value="" oninput="mepRemainingQtys[${p.id}]=this.value">
+    </div>`).join('');
+}
+
+function checkTemp(i) {
+  const val = parseFloat(document.getElementById(`temp-${i}`).value);
+  const el = document.getElementById(`temp-${i}`);
+  if (isNaN(val)) return;
+  el.style.color = val <= 4 ? 'var(--accent3)' : val <= 6 ? 'var(--warn)' : 'var(--danger)';
+}
+
+function mepStep1() {
+  // Get remaining values
+  const allItems = [...demoData.products, ...demoData.plats];
+  allItems.forEach(p => {
+    const v = document.getElementById(`rem-${p.id}`)?.value;
+    mepRemainingQtys[p.id] = parseFloat(v) || 0;
+  });
+
+  // Show previsionnel
+  const prev = demoData.previsions.find(p => p.date === today()) || { midi: 30, soir: 40 };
+  document.getElementById('prev-midi').textContent = prev.midi;
+  document.getElementById('prev-soir').textContent = prev.soir;
+
+  const total = (prev.midi || 30) + (prev.soir || 40);
+  const factor = total / 60; // base 60 couverts
+
+  const previewEl = document.getElementById('mep-preview-list');
+  const allItemsConf = [...demoData.products, ...demoData.plats];
+  previewEl.innerHTML = allItemsConf.map(p => {
+    const remaining = mepRemainingQtys[p.id] || 0;
+    const base = p.mep || 0;
+    const needed = Math.max(0, Math.ceil(base * factor) - remaining);
+    mepConfirmData[p.id] = { name: p.name, unit: p.unit || 'portions', needed, remaining };
+    const cls = needed > 0 ? 'badge-warn' : 'badge-ok';
+    return `
+      <div class="product-row">
+        <div class="product-name">${p.name}</div>
+        <div style="font-size:12px;color:var(--text2)">Reste: ${remaining}</div>
+        <div class="badge ${cls}">+ ${needed}</div>
+      </div>`;
+  }).join('');
+
+  updateMepStep(1);
+}
+
+function mepStep2() {
+  const confirmEl = document.getElementById('mep-confirm-list');
+  const items = Object.values(mepConfirmData);
+  confirmEl.innerHTML = items.map((item, i) => `
+    <div class="check-item" id="mep-conf-${i}">
+      <div class="check-box" id="cb-mep-${i}" onclick="toggleCheck('mep-conf',${i})"></div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:500">${item.name}</div>
+        <div style="font-size:12px;color:var(--text2)">Recommandé: +${item.needed} ${item.unit}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+        <input type="number" class="qty-input" id="mep-real-${i}" value="${item.needed}" min="0" placeholder="qté" style="width:65px">
+        <input type="date" class="qty-input" id="mep-dlc-${i}" style="width:130px;font-size:11px" value="${today()}">
+      </div>
+    </div>`).join('');
+
+  updateMepStep(2);
+}
+
+function updateMepStep(step) {
+  mepCurrentStep = step;
+  [0, 1, 2].forEach(i => {
+    document.getElementById(`mep-step-${i}`).style.display = i === step ? 'block' : 'none';
+    const dot = document.getElementById(`step${i}`);
+    dot.className = 'step-dot' + (i < step ? ' done' : i === step ? ' active' : '');
+  });
+}
+
+function saveMep() {
+  const items = Object.values(mepConfirmData);
+  const done = document.querySelectorAll('#mep-confirm-list .check-box.checked').length;
+  const result = items.map((item, i) => ({
+    name: item.name,
+    qty: parseFloat(document.getElementById(`mep-real-${i}`)?.value) || item.needed,
+    dlc: document.getElementById(`mep-dlc-${i}`)?.value || today(),
+    done: document.getElementById(`cb-mep-${i}`)?.classList.contains('checked'),
+  }));
+
+  const entry = { id: Date.now(), date: nowTs(), by: currentUser.name, items: result };
+  demoData.histMep.unshift(entry);
+  logAction('Mise en place', `${done}/${items.length} produits mis en place`);
+  showToast('✅ Mise en place enregistrée !');
+  goBack();
+}
+
+// ============================================================
+// INVENTAIRE
+// ============================================================
+function initInventaire() {
+  const el = document.getElementById('inv-list');
+  const all = [...demoData.products, ...demoData.plats];
+  el.innerHTML = all.map(p => `
+    <div class="product-row ${p.qty <= p.seuil ? 'low-stock' : 'ok-stock'}">
+      <div style="flex:1">
+        <div class="product-name">${p.name}</div>
+        <div style="font-size:11px;color:var(--text2)">Seuil: ${p.seuil} ${p.unit || 'portions'}</div>
+      </div>
+      <input type="number" class="qty-input" id="inv-${p.id}" value="${p.qty}" min="0" step="0.5">
+      <div class="badge ${p.qty <= p.seuil ? 'badge-danger' : 'badge-ok'}" id="inv-badge-${p.id}">
+        ${p.qty <= p.seuil ? '⚠️' : '✓'}
+      </div>
+    </div>`).join('');
+}
+
+function saveInventaire() {
+  const all = [...demoData.products, ...demoData.plats];
+  const lowItems = [];
+  all.forEach(p => {
+    const v = parseFloat(document.getElementById(`inv-${p.id}`)?.value);
+    if (!isNaN(v)) {
+      const isProduct = demoData.products.find(x => x.id === p.id);
+      if (isProduct) {
+        demoData.products.find(x => x.id === p.id).qty = v;
+      } else {
+        demoData.plats.find(x => x.id === p.id).qty = v;
+      }
+      if (v <= p.seuil) lowItems.push({ name: p.name, qty: v, seuil: p.seuil });
+    }
+  });
+
+  const entry = { id: Date.now(), date: nowTs(), by: currentUser.name, items: all.map(p => ({ name: p.name, qty: p.qty, seuil: p.seuil, unit: p.unit || 'portions' })) };
+  demoData.histInventaires.unshift(entry);
+  logAction('Inventaire', `${all.length} produits comptés. ${lowItems.length} sous seuil.`);
+
+  if (lowItems.length > 0) {
+    showToast(`⚠️ ${lowItems.length} produit(s) sous seuil ajouté(s) à la liste de courses`);
+  } else {
+    showToast('✅ Inventaire enregistré');
+  }
+  goBack();
+}
+
+// ============================================================
+// COURSES
+// ============================================================
+function initCourses() {
+  const all = [...demoData.products, ...demoData.plats];
+  const el = document.getElementById('courses-list');
+  el.innerHTML = all.map(p => `
+    <div class="product-row ${p.qty <= p.seuil ? 'low-stock' : ''}">
+      <div class="check-box" id="cb-course-${p.id}" onclick="toggleCourse(${p.id}, this)"></div>
+      <div style="flex:1">
+        <div class="product-name">${p.name}</div>
+        <div style="font-size:11px;color:var(--text2)">Stock: ${p.qty} ${p.unit||'portions'} / Seuil: ${p.seuil}</div>
+      </div>
+      <input type="number" class="qty-input" id="course-qty-${p.id}" placeholder="qté" min="0" step="0.5" style="display:none">
+    </div>
+    <div id="course-urgent-${p.id}" style="display:none">
+      <div class="urgence-row" onclick="toggleUrgent(${p.id}, this)">
+        <div class="urgence-label">🔴 Marquer comme URGENT</div>
+        <div class="check-box" id="cb-urgent-${p.id}"></div>
+      </div>
+    </div>`).join('');
+
+  // Pre-check items below threshold
+  all.filter(p => p.qty <= p.seuil).forEach(p => {
+    const cb = document.getElementById(`cb-course-${p.id}`);
+    if (cb) { cb.classList.add('checked'); toggleCourse(p.id, cb); }
+  });
+}
+
+function toggleCourse(id, el) {
+  el.classList.toggle('checked');
+  const qtyEl = document.getElementById(`course-qty-${id}`);
+  const urgEl = document.getElementById(`course-urgent-${id}`);
+  const on = el.classList.contains('checked');
+  qtyEl.style.display = on ? 'block' : 'none';
+  urgEl.style.display = on ? 'block' : 'none';
+}
+
+function toggleUrgent(id, row) {
+  const cb = document.getElementById(`cb-urgent-${id}`);
+  cb.classList.toggle('checked');
+  row.style.background = cb.classList.contains('checked') ? 'rgba(224,92,92,0.15)' : '';
+}
+
+function saveCourses() {
+  const all = [...demoData.products, ...demoData.plats];
+  const list = [];
+  all.forEach(p => {
+    const cb = document.getElementById(`cb-course-${p.id}`);
+    if (cb?.classList.contains('checked')) {
+      const qty = document.getElementById(`course-qty-${p.id}`)?.value || '?';
+      const urgent = document.getElementById(`cb-urgent-${p.id}`)?.classList.contains('checked');
+      list.push({ name: p.name, qty, unit: p.unit || 'portions', urgent, done: false });
+    }
+  });
+  if (list.length === 0) { showToast('Aucun produit sélectionné'); return; }
+
+  const entry = { id: Date.now(), date: nowTs(), by: currentUser.name, items: list };
+  demoData.histCourses.unshift(entry);
+  logAction('Liste de courses', `${list.length} produits listés`);
+  showToast(`✅ Liste de courses enregistrée (${list.length} produits)`);
+  goBack();
+}
+
+// ============================================================
+// PERTES
+// ============================================================
+function initPertes() {
+  const sel = document.getElementById('perte-produit');
+  const all = [...demoData.products, ...demoData.plats];
+  sel.innerHTML = '<option value="">-- Sélectionner --</option>' +
+    all.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  document.getElementById('perte-qty-group').style.display = 'none';
+}
+
+function showPerteQty() {
+  const v = document.getElementById('perte-produit').value;
+  document.getElementById('perte-qty-group').style.display = v ? 'block' : 'none';
+}
+
+function savePerte() {
+  const prodId = parseInt(document.getElementById('perte-produit').value);
+  const qty = parseFloat(document.getElementById('perte-qty').value);
+  const motif = document.getElementById('perte-motif').value;
+  const comment = document.getElementById('perte-comment').value;
+  if (!prodId || isNaN(qty) || qty <= 0) { showToast('Remplir tous les champs'); return; }
+  const prod = [...demoData.products, ...demoData.plats].find(p => p.id === prodId);
+  const entry = { id: Date.now(), ts: nowTs(), by: currentUser.name, product: prod.name, qty, motif, comment };
+  demoData.histPertes.unshift(entry);
+  logAction('Perte', `${qty} ${prod.unit || 'portions'} de ${prod.name} — ${motif}`);
+  showToast(`🗑️ Perte déclarée: ${qty} ${prod.unit || ''} de ${prod.name}`);
+  document.getElementById('perte-produit').value = '';
+  document.getElementById('perte-qty-group').style.display = 'none';
+  document.getElementById('perte-qty').value = '';
+  document.getElementById('perte-comment').value = '';
+}
+
+// ============================================================
+// FIN DE SERVICE
+// ============================================================
+function initFinService() {
+  // Bilan mise en place
+  const bilanEl = document.getElementById('fin-bilan-list');
+  const all = [...demoData.products, ...demoData.plats];
+  bilanEl.innerHTML = all.map(p => `
+    <div class="product-row">
+      <div style="flex:1">
+        <div class="product-name">${p.name}</div>
+        <div style="font-size:11px;color:var(--text2)">MEP: ${p.mep || 0} ${p.unit || 'portions'}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <input type="number" class="qty-input" id="fin-rem-${p.id}" placeholder="Reste" min="0" step="0.5">
+      </div>
+    </div>`).join('');
+
+  // Actions
+  const actEl = document.getElementById('fin-actions-list');
+  actEl.innerHTML = demoData.finServiceActions.map((a, i) => `
+    <div class="check-item" id="fin-act-${i}">
+      <div class="check-box" id="cb-fin-${i}" onclick="toggleCheck('fin-act',${i})"></div>
+      <div class="check-label">${a}</div>
+    </div>`).join('');
+}
+
+function saveFinService() {
+  const all = [...demoData.products, ...demoData.plats];
+  const remaining = {};
+  all.forEach(p => {
+    const v = parseFloat(document.getElementById(`fin-rem-${p.id}`)?.value);
+    remaining[p.id] = isNaN(v) ? 0 : v;
+  });
+
+  const doneActs = document.querySelectorAll('#fin-actions-list .check-box.checked').length;
+  const total = demoData.finServiceActions.length;
+  if (doneActs < total) {
+    if (!confirm(`${total - doneActs} action(s) non cochée(s). Clôturer quand même ?`)) return;
+  }
+
+  // Update stock from remaining
+  all.forEach(p => {
+    const isP = demoData.products.find(x => x.id === p.id);
+    if (isP) demoData.products.find(x => x.id === p.id).qty = remaining[p.id] || 0;
+    else demoData.plats.find(x => x.id === p.id).qty = remaining[p.id] || 0;
+  });
+
+  logAction('Fin de service', `Clôture service. ${doneActs}/${total} actions. Stocks mis à jour.`);
+  showToast('✅ Service clôturé avec succès !');
+  goBack();
+}
+
+// ============================================================
+// ADD PRODUCT / PLAT
+// ============================================================
+function clearAddProduct() {
+  ['new-prod-name','new-prod-qty','new-prod-seuil','new-prod-mep'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+}
+
+function saveNewProduct() {
+  const name = document.getElementById('new-prod-name').value.trim();
+  const cat = document.getElementById('new-prod-cat').value;
+  const unit = document.getElementById('new-prod-unit').value;
+  const qty = parseFloat(document.getElementById('new-prod-qty').value) || 0;
+  const seuil = parseFloat(document.getElementById('new-prod-seuil').value);
+  const mep = parseFloat(document.getElementById('new-prod-mep').value) || 0;
+  if (!name || isNaN(seuil)) { showToast('Nom et seuil sont obligatoires'); return; }
+  const newProd = { id: Date.now(), name, cat, unit, qty, seuil, mep };
+  demoData.products.push(newProd);
+  logAction('Ajout produit', `Nouveau produit: ${name}`);
+  showToast(`✅ Produit "${name}" ajouté`);
+  clearAddProduct();
+  goBack();
+}
+
+function clearAddPlat() {
+  ['new-plat-name','new-plat-qty','new-plat-seuil','new-plat-mep','new-plat-prix'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+}
+
+function saveNewPlat() {
+  const name = document.getElementById('new-plat-name').value.trim();
+  const cat = document.getElementById('new-plat-cat').value;
+  const qty = parseFloat(document.getElementById('new-plat-qty').value) || 0;
+  const seuil = parseFloat(document.getElementById('new-plat-seuil').value);
+  const mep = parseFloat(document.getElementById('new-plat-mep').value) || 0;
+  const prix = parseFloat(document.getElementById('new-plat-prix').value) || 0;
+  if (!name || isNaN(seuil)) { showToast('Nom et seuil sont obligatoires'); return; }
+  const newPlat = { id: Date.now(), name, cat, qty, seuil, mep, prix };
+  demoData.plats.push(newPlat);
+  logAction('Ajout plat', `Nouveau plat: ${name} (${prix}€)`);
+  showToast(`✅ Plat "${name}" ajouté`);
+  clearAddPlat();
+  goBack();
+}
+
+// ============================================================
+// LOG ACTION
+// ============================================================
+function logAction(action, detail) {
+  demoData.histActions.unshift({
+    id: Date.now(), ts: nowTs(),
+    user: currentUser?.name || '?',
+    action, detail
+  });
+}
+
+// ============================================================
+// ADMIN
+// ============================================================
+function initAdmin() {
+  document.getElementById('admin-name-label').textContent = currentUser?.name || 'Admin';
+  adminTab(adminCurrentTab);
+}
+
+function adminTab(tab) {
+  adminCurrentTab = tab;
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+  const tabs = ['dashboard','personnel','produits','rapports','courses-hist','inv-hist','previsions'];
+  const idx = tabs.indexOf(tab);
+  document.querySelectorAll('.admin-tab')[idx]?.classList.add('active');
+  const content = document.getElementById('admin-content');
+
+  if (tab === 'dashboard') renderAdminDashboard(content);
+  else if (tab === 'personnel') renderAdminPersonnel(content);
+  else if (tab === 'produits') renderAdminProduits(content);
+  else if (tab === 'rapports') renderAdminRapports(content);
+  else if (tab === 'courses-hist') renderAdminCourses(content);
+  else if (tab === 'inv-hist') renderAdminInventaires(content);
+  else if (tab === 'previsions') renderAdminPrevisions(content);
+}
+
+function renderAdminDashboard(el) {
+  const lowProds = [...demoData.products, ...demoData.plats].filter(p => p.qty <= p.seuil);
+  const todayPertes = demoData.histPertes.filter(p => p.ts.startsWith(today().substring(0,7)));
+  el.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-val">${demoData.products.length + demoData.plats.length}</div><div class="stat-label">Produits & plats</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--danger)">${lowProds.length}</div><div class="stat-label">Sous seuil</div></div>
+      <div class="stat-card"><div class="stat-val">${demoData.histMep.length}</div><div class="stat-label">MEP ce mois</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--warn)">${demoData.histPertes.length}</div><div class="stat-label">Pertes déclarées</div></div>
+    </div>
+    ${lowProds.length > 0 ? `
+    <div class="alert alert-warn">⚠️ ${lowProds.length} produit(s) sous seuil minimum</div>
+    ${lowProds.map(p => `<div class="product-row low-stock"><div class="product-name">${p.name}</div><div class="badge badge-danger">${p.qty} / seuil ${p.seuil}</div></div>`).join('')}
+    ` : '<div class="alert alert-success">✅ Tous les stocks sont au-dessus des seuils</div>'}
+    <p class="section-title" style="margin-top:16px">Dernières actions</p>
+    ${demoData.histActions.slice(0, 6).map(a => `
+      <div class="hist-item">
+        <div class="hist-icon">${actionIcon(a.action)}</div>
+        <div class="hist-info">
+          <div class="hist-title">${a.action} — ${a.user}</div>
+          <div class="hist-sub">${a.ts}</div>
+        </div>
+      </div>`).join('')}`;
+}
+
+function renderAdminPersonnel(el) {
+  el.innerHTML = `
+    <button class="btn btn-primary" onclick="openAddStaff()" style="margin-bottom:16px">➕ Ajouter un membre</button>
+    <p class="section-title">Équipe (${demoData.users.filter(u=>u.role==='staff').length} membres)</p>
+    ${demoData.users.filter(u => u.role === 'staff').map(u => `
+      <div class="product-row">
+        <div class="hist-icon" style="font-size:20px;width:36px;height:36px;background:var(--surface3);border-radius:10px;display:flex;align-items:center;justify-content:center">👤</div>
+        <div style="flex:1;margin-left:10px">
+          <div class="product-name">${u.name}</div>
+          <div style="font-size:11px;color:var(--text2)">ID: ${u.id} · Personnel</div>
+        </div>
+        <button class="btn btn-sm btn-danger" onclick="removeStaff(${u.id})">🗑</button>
+      </div>`).join('')}`;
+}
+
+function openAddStaff() {
+  openModal('Ajouter un membre', `
+    <div class="form-group">
+      <label class="form-label">Prénom *</label>
+      <input id="staff-name-input" class="form-input" type="text" placeholder="Prénom">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mot de passe *</label>
+      <input id="staff-pass-input" class="form-input" type="text" placeholder="Mot de passe">
+    </div>
+    <button class="btn btn-primary" onclick="confirmAddStaff()">✅ Ajouter</button>`);
+}
+
+function confirmAddStaff() {
+  const name = document.getElementById('staff-name-input')?.value.trim();
+  const pass = document.getElementById('staff-pass-input')?.value;
+  if (!name || !pass) { showToast('Remplir tous les champs'); return; }
+  const newUser = { id: Date.now(), name, role: 'staff', password: pass };
+  demoData.users.push(newUser);
+  closeModalDirect();
+  showToast(`✅ ${name} ajouté(e)`);
+  adminTab('personnel');
+}
+
+function removeStaff(id) {
+  if (!confirm('Supprimer ce membre ?')) return;
+  demoData.users = demoData.users.filter(u => u.id !== id);
+  showToast('Membre supprimé');
+  adminTab('personnel');
+}
+
+function renderAdminProduits(el) {
+  el.innerHTML = `
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="btn btn-primary" style="flex:1" onclick="goTo('add-product')">➕ Produit</button>
+      <button class="btn btn-blue" style="flex:1" onclick="goTo('add-plat')">🍴 Plat</button>
+    </div>
+    <p class="section-title">Produits (${demoData.products.length})</p>
+    ${demoData.products.map(p => `
+      <div class="product-row ${p.qty <= p.seuil ? 'low-stock' : 'ok-stock'}">
+        <div style="flex:1">
+          <div class="product-name">${p.name} <span style="font-size:11px;color:var(--text3)">${p.cat}</span></div>
+          <div style="font-size:11px;color:var(--text2)">Stock: ${p.qty} ${p.unit} · Seuil: ${p.seuil}</div>
+        </div>
+        <button class="btn btn-sm btn-danger" onclick="removeProduct(${p.id})">🗑</button>
+      </div>`).join('')}
+    <p class="section-title" style="margin-top:16px">Plats (${demoData.plats.length})</p>
+    ${demoData.plats.map(p => `
+      <div class="product-row ${p.qty <= p.seuil ? 'low-stock' : 'ok-stock'}">
+        <div style="flex:1">
+          <div class="product-name">${p.name} <span style="font-size:11px;color:var(--text3)">${p.cat}</span></div>
+          <div style="font-size:11px;color:var(--text2)">Portions: ${p.qty} · Seuil: ${p.seuil} · ${p.prix}€</div>
+        </div>
+        <button class="btn btn-sm btn-danger" onclick="removePlat(${p.id})">🗑</button>
+      </div>`).join('')}`;
+}
+
+function removeProduct(id) {
+  if (!confirm('Supprimer ce produit ?')) return;
+  demoData.products = demoData.products.filter(p => p.id !== id);
+  showToast('Produit supprimé'); adminTab('produits');
+}
+function removePlat(id) {
+  if (!confirm('Supprimer ce plat ?')) return;
+  demoData.plats = demoData.plats.filter(p => p.id !== id);
+  showToast('Plat supprimé'); adminTab('produits');
+}
+
+function renderAdminRapports(el) {
+  el.innerHTML = `
+    <p class="section-title">Historique complet des tâches</p>
+    ${demoData.histActions.length === 0 ? '<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">Aucune action</div></div>' :
+    demoData.histActions.map(a => `
+      <div class="hist-item">
+        <div class="hist-icon">${actionIcon(a.action)}</div>
+        <div class="hist-info">
+          <div class="hist-title">${a.action}</div>
+          <div class="hist-sub">👤 ${a.user} · ${a.ts}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${a.detail}</div>
+        </div>
+      </div>`).join('')}
+    <p class="section-title" style="margin-top:16px">Historique des pertes</p>
+    ${demoData.histPertes.length === 0 ? '<div class="empty-state"><div class="empty-state-icon">🗑️</div><div class="empty-state-text">Aucune perte déclarée</div></div>' :
+    demoData.histPertes.map(p => `
+      <div class="hist-item">
+        <div class="hist-icon">🗑️</div>
+        <div class="hist-info">
+          <div class="hist-title">${p.product} — ${p.qty}</div>
+          <div class="hist-sub">👤 ${p.by} · ${p.ts} · ${p.motif}</div>
+        </div>
+      </div>`).join('')}`;
+}
+
+function renderAdminCourses(el) {
+  el.innerHTML = `
+    <p class="section-title">Historique listes de courses (${demoData.histCourses.length})</p>
+    ${demoData.histCourses.length === 0 ? '<div class="empty-state"><div class="empty-state-icon">🛒</div><div class="empty-state-text">Aucune liste encore</div></div>' :
+    demoData.histCourses.map(c => `
+      <div class="hist-item" onclick="viewCourseList(${c.id})">
+        <div class="hist-icon">🛒</div>
+        <div class="hist-info">
+          <div class="hist-title">${c.date}</div>
+          <div class="hist-sub">${c.by} — ${c.items.length} produits · ${c.items.filter(i=>i.urgent).length} urgents</div>
+        </div>
+        <div class="hist-arrow">›</div>
+      </div>`).join('')}`;
+}
+
+function viewCourseList(id) {
+  const c = demoData.histCourses.find(x => x.id === id);
+  if (!c) return;
+  openModal(`🛒 Liste du ${c.date}`, `
+    <div class="alert alert-info">Par ${c.by} · ${c.items.length} produits</div>
+    ${c.items.map(item => `
+      <div class="product-row ${item.urgent ? 'low-stock' : ''}">
+        <div class="check-box ${item.done ? 'checked' : ''}" onclick="toggleCourseItemDone(${id},'${item.name}',this)"></div>
+        <div style="flex:1;margin-left:8px">
+          <div class="product-name">${item.name} ${item.urgent ? '<span class="badge badge-danger">🔴 URGENT</span>' : ''}</div>
+          <div style="font-size:12px;color:var(--text2)">Qté: ${item.qty} ${item.unit}</div>
+        </div>
+        ${item.done ? '<span class="badge badge-ok">Acheté ✓</span>' : ''}
+      </div>`).join('')}
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-secondary" style="flex:1" onclick="exportCoursesPDF(${id})">📄 PDF</button>
+      <button class="btn btn-blue" style="flex:1" onclick="exportToSheets('courses', demoData.histCourses.find(x=>x.id===${id}))">📊 Google Sheets</button>
+    </div>`);
+}
+
+function toggleCourseItemDone(listId, itemName, el) {
+  const list = demoData.histCourses.find(x => x.id === listId);
+  if (!list) return;
+  const item = list.items.find(i => i.name === itemName);
+  if (item) { item.done = !item.done; el.classList.toggle('checked'); }
+  viewCourseList(listId);
+}
+
+function exportCoursesPDF(id) {
+  const c = demoData.histCourses.find(x => x.id === id);
+  if (!c) return;
+  // Simple print export
+  let w = window.open('', '_blank');
+  w.document.write(`<html><head><title>Courses ${c.date}</title>
+  <style>body{font-family:sans-serif;padding:20px}h1{font-size:18px}
+  .item{padding:8px;border-bottom:1px solid #eee;display:flex;gap:10px}
+  .done{text-decoration:line-through;color:#999}
+  .urgent{color:red;font-weight:bold}
+  </style></head><body>
+  <h1>🛒 Liste de courses — ${c.date}</h1>
+  <p>Par ${c.by}</p>
+  ${c.items.map(i => `<div class="item"><span>${i.done ? '✅' : '☐'}</span>
+  <span class="${i.done?'done':''} ${i.urgent?'urgent':''}">${i.name} — ${i.qty} ${i.unit} ${i.urgent ? '🔴 URGENT' : ''}</span></div>`).join('')}
+  </body></html>`);
+  w.document.close(); w.print();
+}
+
+function renderAdminInventaires(el) {
+  el.innerHTML = `
+    <p class="section-title">Historique inventaires (${demoData.histInventaires.length})</p>
+    ${demoData.histInventaires.length === 0 ? '<div class="empty-state"><div class="empty-state-icon">📦</div><div class="empty-state-text">Aucun inventaire encore</div></div>' :
+    demoData.histInventaires.map(inv => `
+      <div class="hist-item" onclick="viewInventaire(${inv.id})">
+        <div class="hist-icon">📦</div>
+        <div class="hist-info">
+          <div class="hist-title">${inv.date}</div>
+          <div class="hist-sub">${inv.by} — ${inv.items.length} produits · ${inv.items.filter(i=>i.qty<=i.seuil).length} sous seuil</div>
+        </div>
+        <div class="hist-arrow">›</div>
+      </div>`).join('')}`;
+}
+
+function viewInventaire(id) {
+  const inv = demoData.histInventaires.find(x => x.id === id);
+  if (!inv) return;
+  openModal(`📦 Inventaire ${inv.date}`, `
+    <div class="alert alert-info">Par ${inv.by} · ${inv.items.length} produits</div>
+    ${inv.items.map(item => `
+      <div class="product-row ${item.qty <= item.seuil ? 'low-stock' : 'ok-stock'}">
+        <div style="flex:1">
+          <div class="product-name">${item.name}</div>
+          <div style="font-size:11px;color:var(--text2)">Seuil: ${item.seuil} ${item.unit}</div>
+        </div>
+        <div class="badge ${item.qty <= item.seuil ? 'badge-danger' : 'badge-ok'}">${item.qty} ${item.unit}</div>
+      </div>`).join('')}
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-secondary" style="flex:1" onclick="exportInventairePDF(${id})">📄 PDF</button>
+      <button class="btn btn-blue" style="flex:1" onclick="exportToSheets('inventaire', demoData.histInventaires.find(x=>x.id===${id}))">📊 Google Sheets</button>
+    </div>`);
+}
+
+function exportInventairePDF(id) {
+  const inv = demoData.histInventaires.find(x => x.id === id);
+  if (!inv) return;
+  let w = window.open('', '_blank');
+  w.document.write(`<html><head><title>Inventaire ${inv.date}</title>
+  <style>body{font-family:sans-serif;padding:20px}h1{font-size:18px}
+  .item{padding:8px;border-bottom:1px solid #eee;display:flex;justify-content:space-between}
+  .low{color:red}</style></head><body>
+  <h1>📦 Inventaire — ${inv.date}</h1><p>Par ${inv.by}</p>
+  ${inv.items.map(i => `<div class="item"><span>${i.name}</span>
+  <span class="${i.qty<=i.seuil?'low':''}">${i.qty} ${i.unit} (seuil: ${i.seuil})</span></div>`).join('')}
+  </body></html>`);
+  w.document.close(); w.print();
+}
+
+function renderAdminPrevisions(el) {
+  const todayPrev = demoData.previsions.find(p => p.date === today()) || { date: today(), midi: 0, soir: 0 };
+  el.innerHTML = `
+    <div class="alert alert-info">📅 Saisissez les prévisions de couverts par service.</div>
+    <p class="section-title">Aujourd'hui — ${today()}</p>
+    <div class="product-row">
+      <div class="product-name">🌞 Couverts Midi</div>
+      <input type="number" class="qty-input" id="prev-midi-input" value="${todayPrev.midi}" min="0">
+    </div>
+    <div class="product-row" style="margin-top:8px">
+      <div class="product-name">🌙 Couverts Soir</div>
+      <input type="number" class="qty-input" id="prev-soir-input" value="${todayPrev.soir}" min="0">
+    </div>
+    <button class="btn btn-primary" onclick="savePrevisions()" style="margin-top:16px">💾 Enregistrer les prévisions</button>
+    <hr class="divider">
+    <p class="section-title">Historique prévisions</p>
+    ${demoData.previsions.map(p => `
+      <div class="product-row">
+        <div class="product-name">${p.date}</div>
+        <div class="badge badge-blue">Midi: ${p.midi}</div>
+        <div class="badge badge-blue">Soir: ${p.soir}</div>
+      </div>`).join('')}`;
+}
+
+function savePrevisions() {
+  const midi = parseInt(document.getElementById('prev-midi-input')?.value) || 0;
+  const soir = parseInt(document.getElementById('prev-soir-input')?.value) || 0;
+  const existing = demoData.previsions.findIndex(p => p.date === today());
+  if (existing >= 0) {
+    demoData.previsions[existing] = { date: today(), midi, soir };
+  } else {
+    demoData.previsions.unshift({ date: today(), midi, soir });
+  }
+  showToast(`✅ Prévisions enregistrées: Midi ${midi} / Soir ${soir}`);
+  adminTab('previsions');
+}
+
+// ============================================================
+// API CALL (real backend via Google Apps Script)
+// ============================================================
+async function apiCall(action, data) {
+  // GAS requires GET with jsonp OR POST. We use no-cors POST + workaround:
+  // GAS doPost returns JSON via ContentService — use fetch with mode no-cors
+  // won't work for reading responses, so we use a URL param trick for GET reads
+  // and POST for writes. For simplicity we do all as POST to the GAS URL.
+  try {
+    const resp = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' }, // avoids CORS preflight
+      body: JSON.stringify({ action, ...data })
+    });
+    return await resp.json();
+  } catch (e) {
+    console.error('API error:', e);
+    showToast('❌ Erreur de connexion au serveur');
+    return { ok: false, error: e.toString() };
+  }
+}
+
+// ============================================================
+// EXPORT VERS GOOGLE SHEETS (appel direct GAS)
+// ============================================================
+async function exportToSheets(type, data) {
+  if (USE_DEMO) { showToast('⚠️ Export Sheets indisponible en mode démo'); return; }
+  showToast('⏳ Export en cours...');
+  const res = await apiCall('exportToGoogleSheet', { type, data });
+  if (res.ok) {
+    showToast(`✅ Exporté dans l'onglet "${res.sheetName}"`);
+  } else {
+    showToast('❌ Échec export Sheets');
+  }
+}
+
+// ============================================================
+// SERVICE WORKER REGISTRATION (mode hors-ligne)
+// ============================================================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('SW registered'))
+      .catch(e => console.log('SW failed:', e));
+  });
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  // keyboard fix for iOS
+  document.querySelectorAll('.form-input, .qty-input, .form-select').forEach(el => {
+    el.addEventListener('focus', () => setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300));
+  });
+});
+</script>
+</body>
+</html>
