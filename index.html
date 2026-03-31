@@ -974,9 +974,9 @@
 // ============================================================
 // CONFIG — remplacer par votre URL Google Apps Script déployé
 // ============================================================
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwagWN1Z7GrKMvv2zqn-8Uxt_8bTvRIBV8S_uDEe_-eQ2ZVt39FzvsiAPBPc_IRBWuL/exec';
+const GAS_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
 // Pour le mode DEMO (sans backend), mettre USE_DEMO = true
-const USE_DEMO = false;
+const USE_DEMO = true;
 
 // ============================================================
 // STATE
@@ -1124,40 +1124,52 @@ function setLoginMode(m) {
   });
 }
 
-function doLogin() {
+async function doLogin() {
   const name = document.getElementById('login-name').value.trim();
-  const pass = document.getElementById('login-pass').value;
+  const pass = document.getElementById('login-pass').value.trim();
   const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+
+  if (!name || !pass) {
+    errEl.textContent = 'Remplir le prenom et le mot de passe.';
+    errEl.style.display = 'block';
+    return;
+  }
 
   if (USE_DEMO) {
     const user = demoData.users.find(u =>
-      u.name.toLowerCase() === name.toLowerCase() &&
-      u.password === pass &&
+      u.name.trim().toLowerCase() === name.toLowerCase() &&
+      u.password.trim() === pass &&
       (loginMode === 'admin' ? u.role === 'admin' : u.role === 'staff')
     );
     if (user) {
       currentUser = user;
-      errEl.style.display = 'none';
       screenStack = [];
-      if (user.role === 'admin') {
-        goTo('admin');
-      } else {
-        goTo('home');
-      }
+      if (user.role === 'admin') goTo('admin');
+      else goTo('home');
     } else {
+      const nameExists = demoData.users.find(u => u.name.trim().toLowerCase() === name.toLowerCase());
+      if (!nameExists) {
+        errEl.textContent = 'Prenom introuvable. Comptes demo: Admin, Marie, Jean, Sophie.';
+      } else if (loginMode === 'admin' && nameExists.role !== 'admin') {
+        errEl.textContent = name + ' est un compte Personnel, pas Manager.';
+      } else {
+        errEl.textContent = 'Mot de passe incorrect.';
+      }
       errEl.style.display = 'block';
     }
   } else {
-    apiCall('login', { name, pass, role: loginMode }, (res) => {
-      if (res.ok) {
-        currentUser = res.user;
-        screenStack = [];
-        if (currentUser.role === 'admin') goTo('admin');
-        else goTo('home');
-      } else {
-        errEl.style.display = 'block';
-      }
-    });
+    showToast('Connexion...');
+    const res = await apiCall('login', { name, pass, role: loginMode });
+    if (res && res.ok) {
+      currentUser = res.user;
+      screenStack = [];
+      if (currentUser.role === 'admin') goTo('admin');
+      else goTo('home');
+    } else {
+      errEl.textContent = 'Prenom ou mot de passe incorrect.';
+      errEl.style.display = 'block';
+    }
   }
 }
 
