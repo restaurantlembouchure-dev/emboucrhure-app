@@ -575,8 +575,10 @@
         <button class="login-tab" onclick="setLoginMode('admin')">🔑 Manager</button>
       </div>
       <div class="form-group">
-        <label class="form-label">Prénom</label>
-        <input id="login-name" class="form-input" type="text" placeholder="Votre prénom" autocomplete="off">
+        <label class="form-label">Qui êtes-vous ?</label>
+        <select id="login-name" class="form-select" onchange="onLoginNameChange()">
+          <option value="">-- Sélectionner --</option>
+        </select>
       </div>
       <div class="form-group">
         <label class="form-label">Mot de passe</label>
@@ -974,9 +976,9 @@
 // ============================================================
 // CONFIG — remplacer par votre URL Google Apps Script déployé
 // ============================================================
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwagWN1Z7GrKMvv2zqn-8Uxt_8bTvRIBV8S_uDEe_-eQ2ZVt39FzvsiAPBPc_IRBWuL/exec';
+const GAS_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
 // Pour le mode DEMO (sans backend), mettre USE_DEMO = true
-const USE_DEMO = false;
+const USE_DEMO = true;
 
 // ============================================================
 // STATE
@@ -1117,11 +1119,66 @@ function goBack() {
 // AUTH
 // ============================================================
 let loginMode = 'staff';
+
 function setLoginMode(m) {
   loginMode = m;
   document.querySelectorAll('.login-tab').forEach((t, i) => {
     t.classList.toggle('active', (i === 0 && m === 'staff') || (i === 1 && m === 'admin'));
   });
+  populateLoginDropdown();
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').style.display = 'none';
+}
+
+function onLoginNameChange() {
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').style.display = 'none';
+}
+
+async function populateLoginDropdown() {
+  const sel = document.getElementById('login-name');
+  sel.innerHTML = '<option value="">-- Sélectionner --</option>';
+
+  if (USE_DEMO) {
+    const filtered = demoData.users.filter(u =>
+      loginMode === 'admin' ? u.role === 'admin' : u.role === 'staff'
+    );
+    filtered.forEach(u => {
+      const opt = document.createElement('option');
+      opt.value = u.name;
+      opt.textContent = u.name;
+      sel.appendChild(opt);
+    });
+  } else {
+    // Charger la liste depuis le backend
+    try {
+      const res = await apiCall('getUsers');
+      if (res && res.ok && res.users) {
+        const filtered = res.users.filter(u =>
+          loginMode === 'admin' ? u.role === 'admin' : u.role === 'staff'
+        );
+        // Toujours ajouter Admin pour le mode manager
+        if (loginMode === 'admin') {
+          const adminOpt = document.createElement('option');
+          adminOpt.value = 'Admin';
+          adminOpt.textContent = 'Admin';
+          sel.appendChild(adminOpt);
+        }
+        filtered.forEach(u => {
+          const opt = document.createElement('option');
+          opt.value = u.name;
+          opt.textContent = u.name;
+          sel.appendChild(opt);
+        });
+      }
+    } catch(e) {
+      // Si pas de connexion, laisser la liste vide avec message
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = '⚠️ Hors ligne — impossible de charger';
+      sel.appendChild(opt);
+    }
+  }
 }
 
 async function doLogin() {
@@ -1732,18 +1789,31 @@ function renderAdminDashboard(el) {
       </div>`).join('')}`;
 }
 
-function renderAdminPersonnel(el) {
+async function renderAdminPersonnel(el) {
   el.innerHTML = `
     <button class="btn btn-primary" onclick="openAddStaff()" style="margin-bottom:16px">➕ Ajouter un membre</button>
-    <p class="section-title">Équipe (${demoData.users.filter(u=>u.role==='staff').length} membres)</p>
-    ${demoData.users.filter(u => u.role === 'staff').map(u => `
+    <div id="staff-list-container"><div class="loading-spinner" style="margin-top:20px"></div></div>`;
+
+  let users = [];
+  if (USE_DEMO) {
+    users = demoData.users.filter(u => u.role === 'staff');
+  } else {
+    const res = await apiCall('getUsers');
+    if (res && res.ok) users = res.users || [];
+    else { document.getElementById('staff-list-container').innerHTML = '<div class="alert alert-warn">❌ Impossible de charger le personnel</div>'; return; }
+  }
+
+  document.getElementById('staff-list-container').innerHTML = `
+    <p class="section-title">Équipe (${users.length} membre${users.length > 1 ? 's' : ''})</p>
+    ${users.length === 0 ? '<div class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-text">Aucun membre encore</div></div>' :
+    users.map(u => `
       <div class="product-row">
-        <div class="hist-icon" style="font-size:20px;width:36px;height:36px;background:var(--surface3);border-radius:10px;display:flex;align-items:center;justify-content:center">👤</div>
+        <div style="font-size:20px;width:36px;height:36px;background:var(--surface3);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">👤</div>
         <div style="flex:1;margin-left:10px">
           <div class="product-name">${u.name}</div>
-          <div style="font-size:11px;color:var(--text2)">ID: ${u.id} · Personnel</div>
+          <div style="font-size:11px;color:var(--text2)">Personnel</div>
         </div>
-        <button class="btn btn-sm btn-danger" onclick="removeStaff(${u.id})">🗑</button>
+        <button class="btn btn-sm btn-danger" onclick="removeStaff('${u.id}')">🗑</button>
       </div>`).join('')}`;
 }
 
@@ -1771,11 +1841,21 @@ function confirmAddStaff() {
   adminTab('personnel');
 }
 
-function removeStaff(id) {
+async function removeStaff(id) {
   if (!confirm('Supprimer ce membre ?')) return;
-  demoData.users = demoData.users.filter(u => u.id !== id);
-  showToast('Membre supprimé');
-  adminTab('personnel');
+  if (USE_DEMO) {
+    demoData.users = demoData.users.filter(u => u.id != id);
+    showToast('Membre supprimé');
+    adminTab('personnel');
+  } else {
+    const res = await apiCall('removeUser', { id });
+    if (res && res.ok) {
+      showToast('✅ Membre supprimé');
+      adminTab('personnel');
+    } else {
+      showToast('❌ Erreur suppression');
+    }
+  }
 }
 
 function renderAdminProduits(el) {
@@ -1989,19 +2069,14 @@ function savePrevisions() {
 }
 
 // ============================================================
-// API CALL (real backend via Google Apps Script)
+// API CALL — via GET + payload param (contourne CORS GAS)
 // ============================================================
-async function apiCall(action, data) {
-  // GAS requires GET with jsonp OR POST. We use no-cors POST + workaround:
-  // GAS doPost returns JSON via ContentService — use fetch with mode no-cors
-  // won't work for reading responses, so we use a URL param trick for GET reads
-  // and POST for writes. For simplicity we do all as POST to the GAS URL.
+async function apiCall(action, data = {}) {
   try {
-    const resp = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' }, // avoids CORS preflight
-      body: JSON.stringify({ action, ...data })
-    });
+    const payload = encodeURIComponent(JSON.stringify({ action, ...data }));
+    const url = GAS_URL + '?payload=' + payload;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
     return await resp.json();
   } catch (e) {
     console.error('API error:', e);
@@ -2039,7 +2114,10 @@ if ('serviceWorker' in navigator) {
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
-  // keyboard fix for iOS
+  // Peupler la liste déroulante de login au chargement
+  populateLoginDropdown();
+
+  // Keyboard fix for iOS
   document.querySelectorAll('.form-input, .qty-input, .form-select').forEach(el => {
     el.addEventListener('focus', () => setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300));
   });
