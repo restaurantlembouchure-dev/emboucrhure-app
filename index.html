@@ -264,12 +264,20 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
   <div class="topbar"><button class="btn-back" onclick="goBack()">← Retour</button><div class="topbar-title">⚠️ Vérifications arrivée</div><div style="width:70px"></div></div>
   <div class="scroll">
     <div class="alert alert-warn">⚠️ Checklist obligatoire — à valider une seule fois par service.</div>
+
+    <p class="stitle">🌡️ Relevé de températures frigos</p>
+    <div id="temp-verif-list"></div>
+    <div class="alert alert-info" style="margin-top:4px;font-size:12px">✅ Normal: 0–4°C &nbsp;|&nbsp; ⚠️ Attention: 4–6°C &nbsp;|&nbsp; 🚨 Hors norme: > 6°C</div>
+
+    <hr style="border:none;border-top:1px solid var(--border);margin:14px 0">
+    <p class="stitle">Checklist arrivée</p>
     <div id="verif-list"></div>
+
     <div class="fg" style="margin-top:8px">
       <label class="flabel">Remarques (optionnel)</label>
-      <textarea id="verif-remarks" class="ftextarea" placeholder="Observations..."></textarea>
+      <textarea id="verif-remarks" class="ftextarea" placeholder="Observations, anomalie constatée..."></textarea>
     </div>
-    <button class="btn btn-green" onclick="saveVerif()">✅ Valider les vérifications</button>
+    <button class="btn btn-green" onclick="saveVerif()">✅ Valider et enregistrer</button>
   </div>
 </div>
 
@@ -279,10 +287,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
   <div class="scroll">
     <div class="steps" id="mep-steps"><div class="step-dot active"></div><div class="step-dot"></div><div class="step-dot"></div></div>
     <div id="mep-step-0">
-      <div class="alert alert-info">📍 Étape 1/3 — Températures frigos & stocks restants</div>
-      <p class="stitle">Températures frigos (°C)</p>
-      <div id="temp-list"></div>
-      <hr class="divider">
+      <div class="alert alert-info">📍 Étape 1/3 — Relevé des stocks restants dans les frigos</div>
       <p class="stitle">Quantités restantes trouvées</p>
       <div id="mep-remain-list"></div>
       <button class="btn btn-primary" onclick="mepNext(1)" style="margin-top:14px">Calculer prévisionnel →</button>
@@ -421,7 +426,11 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
     </div>
     <div class="fg"><label class="flabel">Stock actuel</label><input id="np-stock" class="finput" type="number" placeholder="0" min="0"></div>
     <div class="fg"><label class="flabel">Stock minimum (alerte) *</label><input id="np-seuil" class="finput" type="number" placeholder="0" min="0"></div>
-    <div class="fg"><label class="flabel">Ratio MEP par couvert</label><input id="np-ratio" class="finput" type="number" placeholder="0.1" step="0.01" min="0"></div>
+    <div class="fg">
+      <label class="flabel">Quantité à préparer par couvert</label>
+      <input id="np-ratio" class="finput" type="number" placeholder="Ex: 0.4 (= 1 portion pour 2-3 couverts)" step="0.05" min="0">
+      <div style="font-size:11px;color:var(--text2);margin-top:4px">💡 Ex: 0.5 = 1 portion pour 2 couverts · 1 = 1 portion par couvert · 2 = 2 portions par couvert</div>
+    </div>
     <div class="fg"><label class="flabel">Fournisseur</label><input id="np-fourn" class="finput" type="text" placeholder="Ex: Boucherie Marcel"></div>
     <button class="btn btn-primary" onclick="saveNewProd()">💾 Enregistrer</button>
   </div>
@@ -440,6 +449,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
     <button class="admin-tab" onclick="aTab('produits')">📦 Produits</button>
     <button class="admin-tab" onclick="aTab('previsions')">🗓️ Prévisions</button>
     <button class="admin-tab" onclick="aTab('commandes')">🛒 Commandes</button>
+    <button class="admin-tab" onclick="aTab('releves')">🌡️ Relevés</button>
     <button class="admin-tab" onclick="aTab('rapports')">📋 Rapports</button>
   </div>
   <div class="scroll" id="admin-content"></div>
@@ -481,47 +491,48 @@ const LOGO_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAxKElEQVR42u2deZ
 // DONNÉES DÉMO
 // ════════════════════════════════════════════════════════
 const PLATS = [
+  // qte1 = portions à préparer PAR couvert
   // Entrées
-  { id:1,  name:'Accras',              cat:'Entrée',         unit:'portion(s)', stock:0, seuil:10, ratio:0.40, fourn:'' },
-  { id:2,  name:'Nems',                cat:'Entrée',         unit:'portion(s)', stock:0, seuil:6,  ratio:0.18, fourn:'' },
-  { id:3,  name:'Samoussas',           cat:'Entrée',         unit:'portion(s)', stock:0, seuil:6,  ratio:0.18, fourn:'' },
-  { id:4,  name:'Crevettes tempura',   cat:'Entrée',         unit:'portion(s)', stock:0, seuil:5,  ratio:0.12, fourn:'' },
-  { id:5,  name:'Pisquettes',          cat:'Entrée',         unit:'portion(s)', stock:0, seuil:5,  ratio:0.10, fourn:'' },
-  { id:6,  name:'Tapas trio',          cat:'Entrée',         unit:'portion(s)', stock:0, seuil:4,  ratio:0.08, fourn:'' },
-  { id:7,  name:'Assiette créole',     cat:'Entrée',         unit:'portion(s)', stock:0, seuil:5,  ratio:0.10, fourn:'' },
+  { id:1,  name:'Accras',               cat:'Entrée',         unit:'portion(s)', stock:0, seuil:10, qte1:0.4,  fourn:'' },
+  { id:2,  name:'Nems',                 cat:'Entrée',         unit:'portion(s)', stock:0, seuil:6,  qte1:0.2,  fourn:'' },
+  { id:3,  name:'Samoussas',            cat:'Entrée',         unit:'portion(s)', stock:0, seuil:6,  qte1:0.2,  fourn:'' },
+  { id:4,  name:'Crevettes tempura',    cat:'Entrée',         unit:'portion(s)', stock:0, seuil:5,  qte1:0.1,  fourn:'' },
+  { id:5,  name:'Pisquettes',           cat:'Entrée',         unit:'portion(s)', stock:0, seuil:5,  qte1:0.1,  fourn:'' },
+  { id:6,  name:'Tapas trio',           cat:'Entrée',         unit:'portion(s)', stock:0, seuil:4,  qte1:0.1,  fourn:'' },
+  { id:7,  name:'Assiette créole',      cat:'Entrée',         unit:'portion(s)', stock:0, seuil:5,  qte1:0.1,  fourn:'' },
   // Salades
-  { id:8,  name:'Salade Cap Est',      cat:'Salade',         unit:'portion(s)', stock:0, seuil:4,  ratio:0.20, fourn:'' },
+  { id:8,  name:'Salade Cap Est',       cat:'Salade',         unit:'portion(s)', stock:0, seuil:4,  qte1:0.2,  fourn:'' },
   // Brochettes
-  { id:9,  name:'Brochette de bœuf',   cat:'Brochette',      unit:'portion(s)', stock:0, seuil:5,  ratio:0.10, fourn:'Boucherie' },
-  { id:10, name:'Brochette de crevettes',cat:'Brochette',    unit:'portion(s)', stock:0, seuil:5,  ratio:0.10, fourn:'Poissonnerie' },
-  { id:11, name:'Brochette de poisson',cat:'Brochette',      unit:'portion(s)', stock:0, seuil:5,  ratio:0.10, fourn:'Poissonnerie' },
-  { id:12, name:'Brochette de poulet', cat:'Brochette',      unit:'portion(s)', stock:0, seuil:5,  ratio:0.16, fourn:'Boucherie' },
-  { id:13, name:'Brochette de légumes',cat:'Brochette',      unit:'portion(s)', stock:0, seuil:4,  ratio:0.06, fourn:'Primeur' },
+  { id:9,  name:'Brochette de bœuf',    cat:'Brochette',      unit:'portion(s)', stock:0, seuil:5,  qte1:0.1,  fourn:'Boucherie' },
+  { id:10, name:'Brochette de crevettes',cat:'Brochette',     unit:'portion(s)', stock:0, seuil:5,  qte1:0.1,  fourn:'Poissonnerie' },
+  { id:11, name:'Brochette de poisson', cat:'Brochette',      unit:'portion(s)', stock:0, seuil:5,  qte1:0.1,  fourn:'Poissonnerie' },
+  { id:12, name:'Brochette de poulet',  cat:'Brochette',      unit:'portion(s)', stock:0, seuil:5,  qte1:0.2,  fourn:'Boucherie' },
+  { id:13, name:'Brochette de légumes', cat:'Brochette',      unit:'portion(s)', stock:0, seuil:4,  qte1:0.1,  fourn:'Primeur' },
   // Viandes
-  { id:14, name:'Entrecôte',           cat:'Viande',         unit:'portion(s)', stock:0, seuil:6,  ratio:0.18, fourn:'Boucherie' },
-  { id:15, name:'Pièce du boucher',    cat:'Viande',         unit:'portion(s)', stock:0, seuil:4,  ratio:0.10, fourn:'Boucherie' },
-  { id:16, name:'Magret de canard',    cat:'Viande',         unit:'portion(s)', stock:0, seuil:3,  ratio:0.08, fourn:'Boucherie' },
-  { id:17, name:'Côte de bœuf',        cat:'Viande',         unit:'portion(s)', stock:0, seuil:2,  ratio:0.06, fourn:'Boucherie' },
+  { id:14, name:'Entrecôte',            cat:'Viande',         unit:'portion(s)', stock:0, seuil:6,  qte1:0.2,  fourn:'Boucherie' },
+  { id:15, name:'Pièce du boucher',     cat:'Viande',         unit:'portion(s)', stock:0, seuil:4,  qte1:0.1,  fourn:'Boucherie' },
+  { id:16, name:'Magret de canard',     cat:'Viande',         unit:'portion(s)', stock:0, seuil:3,  qte1:0.1,  fourn:'Boucherie' },
+  { id:17, name:'Côte de bœuf',         cat:'Viande',         unit:'portion(s)', stock:0, seuil:2,  qte1:0.1,  fourn:'Boucherie' },
   // Poissons
-  { id:18, name:'Filet de poisson frais',cat:'Poisson',      unit:'portion(s)', stock:0, seuil:4,  ratio:0.16, fourn:'Poissonnerie' },
-  { id:19, name:'Tartare de poisson',  cat:'Poisson',        unit:'portion(s)', stock:0, seuil:3,  ratio:0.08, fourn:'Poissonnerie' },
+  { id:18, name:'Filet de poisson frais',cat:'Poisson',       unit:'portion(s)', stock:0, seuil:4,  qte1:0.2,  fourn:'Poissonnerie' },
+  { id:19, name:'Tartare de poisson',   cat:'Poisson',        unit:'portion(s)', stock:0, seuil:3,  qte1:0.1,  fourn:'Poissonnerie' },
   // Accompagnements
-  { id:20, name:'Frites maison',       cat:'Accompagnement', unit:'portion(s)', stock:0, seuil:10, ratio:0.80, fourn:'Primeur' },
-  { id:21, name:'Salade',              cat:'Accompagnement', unit:'portion(s)', stock:0, seuil:5,  ratio:0.40, fourn:'Primeur' },
-  { id:22, name:'Légumes variés',      cat:'Accompagnement', unit:'portion(s)', stock:0, seuil:5,  ratio:0.35, fourn:'Primeur' },
-  { id:23, name:'Gratin',              cat:'Accompagnement', unit:'portion(s)', stock:0, seuil:5,  ratio:0.35, fourn:'Primeur' },
+  { id:20, name:'Frites maison',        cat:'Accompagnement', unit:'portion(s)', stock:0, seuil:10, qte1:0.8,  fourn:'Primeur' },
+  { id:21, name:'Salade',               cat:'Accompagnement', unit:'portion(s)', stock:0, seuil:5,  qte1:0.4,  fourn:'Primeur' },
+  { id:22, name:'Légumes variés',       cat:'Accompagnement', unit:'portion(s)', stock:0, seuil:5,  qte1:0.4,  fourn:'Primeur' },
+  { id:23, name:'Gratin',               cat:'Accompagnement', unit:'portion(s)', stock:0, seuil:5,  qte1:0.4,  fourn:'Primeur' },
   // Desserts
-  { id:24, name:'Fondant chocolat',    cat:'Dessert',        unit:'portion(s)', stock:0, seuil:6,  ratio:0.18, fourn:'' },
-  { id:25, name:'Tartelettes',         cat:'Dessert',        unit:'portion(s)', stock:0, seuil:6,  ratio:0.15, fourn:'' },
-  { id:26, name:'Gauffres',            cat:'Dessert',        unit:'portion(s)', stock:0, seuil:6,  ratio:0.12, fourn:'' },
-  { id:27, name:'Profiteroles',        cat:'Dessert',        unit:'portion(s)', stock:0, seuil:6,  ratio:0.10, fourn:'' },
-  { id:28, name:'Compotée',            cat:'Dessert',        unit:'portion(s)', stock:0, seuil:6,  ratio:0.10, fourn:'' },
+  { id:24, name:'Fondant chocolat',     cat:'Dessert',        unit:'portion(s)', stock:0, seuil:6,  qte1:0.2,  fourn:'' },
+  { id:25, name:'Tartelettes',          cat:'Dessert',        unit:'portion(s)', stock:0, seuil:6,  qte1:0.2,  fourn:'' },
+  { id:26, name:'Gauffres',             cat:'Dessert',        unit:'portion(s)', stock:0, seuil:6,  qte1:0.1,  fourn:'' },
+  { id:27, name:'Profiteroles',         cat:'Dessert',        unit:'portion(s)', stock:0, seuil:6,  qte1:0.1,  fourn:'' },
+  { id:28, name:'Compotée',             cat:'Dessert',        unit:'portion(s)', stock:0, seuil:6,  qte1:0.1,  fourn:'' },
 ];
 
 const FRIGOS = ['Frigo 1 — Viandes', 'Frigo 2 — Poissons', 'Frigo 3 — Légumes/Sauces', 'Chambre froide'];
 
 const VERIF_CHECKLIST = [
-  { label:'Températures frigos conformes (0–4°C)', critical:true },
+  { label:'Températures frigos relevées et conformes (voir ci-dessous)', critical:true },
   { label:'Propreté plan de travail et équipements', critical:true },
   { label:'Stocks gaz / induction OK', critical:true },
   { label:'Gants, tabliers, EPI disponibles', critical:false },
@@ -814,15 +825,49 @@ function showMepDetail(id) {
 // ════════════════════════════════════════════════════════
 function initVerif() {
   if (isVerifDone(_user)) {
+    document.getElementById('temp-verif-list').innerHTML = renderSavedTemps();
     document.getElementById('verif-list').innerHTML = '<div class="alert alert-success">✅ Vérifications déjà validées pour ce service.</div>';
+    document.querySelector('#screen-verif .btn-green').style.display = 'none';
     return;
   }
+
+  // Bloc températures frigos
+  document.getElementById('temp-verif-list').innerHTML = FRIGOS.map((f,i) => `
+    <div class="prod-row" style="margin-bottom:8px">
+      <div style="flex:1">
+        <div class="prod-name" style="font-size:13px">${f}</div>
+      </div>
+      <input type="number" class="qty-in" id="tv-${i}" placeholder="°C" step="0.5" style="width:80px" oninput="colorTemp(${i})">
+      <div id="tv-icon-${i}" style="font-size:18px;width:24px;text-align:center">—</div>
+    </div>`).join('');
+
+  // Checklist
   document.getElementById('verif-list').innerHTML = VERIF_CHECKLIST.map((v,i) => `
     <div class="check-item" id="vi-${i}">
       <div class="checkbox" id="vc-${i}" onclick="togCheck('vi-','vc-',${i})"></div>
       <div class="ci-label">${v.label}</div>
       ${v.critical ? '<div class="ci-badge" style="color:var(--red)">Critique</div>' : ''}
     </div>`).join('');
+}
+
+function colorTemp(i) {
+  const val = parseFloat(document.getElementById(`tv-${i}`)?.value);
+  const input = document.getElementById(`tv-${i}`);
+  const icon = document.getElementById(`tv-icon-${i}`);
+  if (isNaN(val)) { icon.textContent = '—'; return; }
+  if (val <= 4)  { input.style.color = 'var(--green)';  icon.textContent = '✅'; }
+  else if (val <= 6) { input.style.color = 'var(--accent)'; icon.textContent = '⚠️'; }
+  else           { input.style.color = 'var(--red)';    icon.textContent = '🚨'; }
+}
+
+function renderSavedTemps() {
+  const key = serviceKey(_user);
+  const saved = DB.serviceState[key]?.temps || [];
+  if (!saved.length) return '<div class="alert alert-info">Aucun relevé enregistré.</div>';
+  return saved.map(t => {
+    const cls = t.val <= 4 ? 'badge-green' : t.val <= 6 ? 'badge-orange' : 'badge-red';
+    return `<div class="prod-row"><div class="prod-name">${t.frigo}</div><div class="badge ${cls}">${t.val}°C</div></div>`;
+  }).join('');
 }
 
 function togCheck(itemPfx, boxPfx, i) {
@@ -833,8 +878,26 @@ function togCheck(itemPfx, boxPfx, i) {
   item.classList.toggle('done', on);
 }
 
-function saveVerif() {
+async function saveVerif() {
   if (isVerifDone(_user)) { goBack(); return; }
+
+  // Collecter les températures
+  const temps = FRIGOS.map((f,i) => {
+    const val = parseFloat(document.getElementById(`tv-${i}`)?.value);
+    return { frigo: f, val: isNaN(val) ? null : val };
+  });
+  const missingTemps = temps.filter(t => t.val === null);
+  if (missingTemps.length > 0) {
+    if (!confirm(`⚠️ ${missingTemps.length} température(s) non saisie(s). Continuer quand même ?`)) return;
+  }
+  const hors_norme = temps.filter(t => t.val !== null && t.val > 6);
+  if (hors_norme.length > 0) {
+    if (!confirm(`🚨 ${hors_norme.length} frigo(s) HORS NORME (> 6°C) !
+${hors_norme.map(t=>t.frigo+': '+t.val+'°C').join(', ')}
+Valider quand même ?`)) return;
+  }
+
+  // Checklist
   const total = VERIF_CHECKLIST.length;
   const done = document.querySelectorAll('[id^="vc-"].checked').length;
   const critical = VERIF_CHECKLIST.filter(v=>v.critical).length;
@@ -842,10 +905,40 @@ function saveVerif() {
   if (critDone < critical) {
     if (!confirm(`⚠️ ${critical-critDone} tâche(s) critique(s) non cochée(s). Valider quand même ?`)) return;
   }
+
   const remarks = document.getElementById('verif-remarks').value;
+
+  // Sauvegarder les temps dans le state local
+  const k = serviceKey(_user);
+  if (!DB.serviceState[k]) DB.serviceState[k] = {};
+  DB.serviceState[k].temps = temps;
+
+  // Sauvegarder le relevé de températures dans l'historique local
+  const releveEntry = {
+    id: Date.now(),
+    ts: nowStr(),
+    date: todayStr(),
+    service: currentService(),
+    by: _user.name,
+    temps,
+    remarks,
+    statut: hors_norme.length > 0 ? 'ANOMALIE' : 'OK'
+  };
+  DB.histReleves = DB.histReleves || [];
+  DB.histReleves.unshift(releveEntry);
+
+  // Envoyer au backend GAS si connecté
+  if (!USE_DEMO) {
+    apiCall('saveReleve', {
+      ts: releveEntry.ts, date: releveEntry.date, service: releveEntry.service,
+      by: releveEntry.by, temps: JSON.stringify(temps), remarks, statut: releveEntry.statut
+    }).catch(() => {});
+  }
+
   markVerifDone(_user);
-  logAction('Vérifications', `${done}/${total} vérifications · Service ${currentService()}${remarks?' · '+remarks:''}`);
-  showToast(`✅ Vérifications validées (${done}/${total})`);
+  const tempStr = temps.filter(t=>t.val!==null).map(t=>t.frigo.split(' — ')[0]+': '+t.val+'°C').join(', ');
+  logAction('Vérifications', `${done}/${total} vérifications · ${tempStr} · Service ${currentService()}${remarks?' · '+remarks:''}`);
+  showToast(`✅ Validé ! Températures enregistrées.`);
   goBack();
 }
 
@@ -859,26 +952,15 @@ function initMep() {
   _mepRemain = {}; _mepPreview = {};
   setMepStep(0);
 
-  // Frigos temps
-  document.getElementById('temp-list').innerHTML = FRIGOS.map((f,i) => `
-    <div class="prod-row" style="margin-bottom:8px">
-      <div class="prod-name" style="font-size:13px">${f}</div>
-      <input type="number" class="qty-in" id="tmp-${i}" placeholder="°C" step="0.5" style="width:80px" onchange="checkTemp(${i})">
-    </div>`).join('');
-
   // Stocks restants
   document.getElementById('mep-remain-list').innerHTML = DB.plats.map(p => `
     <div class="prod-row">
-      <div style="flex:1"><div class="prod-name">${p.name}</div><div class="prod-sub">${p.cat} · ratio ${p.ratio}</div></div>
-      <input type="number" class="qty-in" id="rem-${p.id}" placeholder="0" min="0" step="0.5" oninput="_mepRemain[${p.id}]=parseFloat(this.value)||0">
+      <div style="flex:1">
+        <div class="prod-name">${p.name}</div>
+        <div class="prod-sub">${p.cat} · ${p.qte1} portion/couvert</div>
+      </div>
+      <input type="number" class="qty-in" id="rem-${p.id}" placeholder="reste" min="0" step="0.5" oninput="_mepRemain[${p.id}]=parseFloat(this.value)||0">
     </div>`).join('');
-}
-
-function checkTemp(i) {
-  const val = parseFloat(document.getElementById(`tmp-${i}`).value);
-  const el = document.getElementById(`tmp-${i}`);
-  if (isNaN(val)) return;
-  el.style.color = val<=4 ? 'var(--green)' : val<=6 ? 'var(--accent)' : 'var(--red)';
 }
 
 function mepNext(step) {
@@ -897,11 +979,16 @@ function mepNext(step) {
     document.getElementById('m-soir').textContent = prev?.soir||'—';
 
     document.getElementById('mep-prev-list').innerHTML = DB.plats.map(p => {
-      const needed = Math.max(0, Math.ceil(p.ratio * couverts) - (_mepRemain[p.id]||0));
-      _mepPreview[p.id] = { name:p.name, unit:p.unit, needed, remain:_mepRemain[p.id]||0, ratio:p.ratio };
+      // Formule : qte1 × couverts du jour − stock restant = à préparer
+      const theorique = Math.ceil(p.qte1 * couverts);
+      const needed = Math.max(0, theorique - (_mepRemain[p.id]||0));
+      _mepPreview[p.id] = { name:p.name, unit:p.unit, needed, theorique, remain:_mepRemain[p.id]||0, qte1:p.qte1 };
       const cls = needed > 0 ? 'badge-orange' : 'badge-green';
       return `<div class="prod-row">
-        <div style="flex:1"><div class="prod-name">${p.name}</div><div class="prod-sub">Ratio ${p.ratio} × ${couverts} couverts · Reste: ${_mepRemain[p.id]||0}</div></div>
+        <div style="flex:1">
+          <div class="prod-name">${p.name}</div>
+          <div class="prod-sub">${p.qte1} portion/couvert × ${couverts} couverts = ${theorique} − reste ${_mepRemain[p.id]||0}</div>
+        </div>
         <div class="badge ${cls}">+${needed}</div>
       </div>`;
     }).join('');
@@ -914,7 +1001,7 @@ function mepNext(step) {
         <div class="checkbox" id="mcc-${i}" onclick="togCheck('mc-','mcc-',${i})"></div>
         <div style="flex:1">
           <div style="font-size:14px;font-weight:700">${item.name}</div>
-          <div style="font-size:11px;color:var(--text2)">Recommandé: +${item.needed} ${item.unit}</div>
+          <div style="font-size:11px;color:var(--text2)">Recommandé: +${item.needed} ${item.unit} (${item.qte1} × ${couverts} couverts)</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
           <input type="number" class="qty-in" id="mr-${i}" value="${item.needed}" min="0" step="0.5">
@@ -1145,7 +1232,7 @@ function saveNewProd() {
     unit: document.getElementById('np-unit').value,
     stock: parseFloat(document.getElementById('np-stock').value)||0,
     seuil,
-    ratio: parseFloat(document.getElementById('np-ratio').value)||0.1,
+    qte1: parseFloat(document.getElementById('np-ratio').value)||0.1,
     fourn: document.getElementById('np-fourn').value,
   };
   DB.plats.push(newP);
@@ -1166,11 +1253,11 @@ function initAdmin() {
 function aTab(tab) {
   _aTab = tab;
   document.querySelectorAll('.admin-tab').forEach((t,i) => {
-    const tabs = ['dashboard','personnel','produits','previsions','commandes','rapports'];
+    const tabs = ['dashboard','personnel','produits','previsions','commandes','releves','rapports'];
     t.classList.toggle('active', tabs[i]===tab);
   });
   const el = document.getElementById('admin-content');
-  const renders = { dashboard:renderDash, personnel:renderPersonnel, produits:renderProduits, previsions:renderPrevisions, commandes:renderCommandes, rapports:renderRapports };
+  const renders = { dashboard:renderDash, personnel:renderPersonnel, produits:renderProduits, previsions:renderPrevisions, commandes:renderCommandes, releves:renderReleves, rapports:renderRapports };
   if (renders[tab]) renders[tab](el);
 }
 
@@ -1245,7 +1332,7 @@ function renderProduits(el) {
           <div class="prod-row ${p.stock<=p.seuil?'low':'ok'}">
             <div style="flex:1">
               <div class="prod-name">${p.name}</div>
-              <div class="prod-sub">Stock: ${p.stock} ${p.unit} · Seuil: ${p.seuil} · Ratio: ${p.ratio}</div>
+              <div class="prod-sub">Stock: ${p.stock} ${p.unit} · Seuil: ${p.seuil} · MEP: ${p.qte1} portion/couvert</div>
             </div>
             <button class="btn btn-sm" style="background:var(--red-dim);color:var(--red);border:none" onclick="removeProd(${p.id})">🗑</button>
           </div>`).join('');
@@ -1380,6 +1467,77 @@ function exportCoursesPDF(id) {
   ${c.items.map(i=>`<div class="item"><span>${i.done?'✅':'☐'}</span>
   <span class="${i.done?'done':''}">${i.name} — ${i.qty} ${i.unit}</span></div>`).join('')}
   </body></html>`);
+  w.document.close(); w.print();
+}
+
+function renderReleves(el) {
+  DB.histReleves = DB.histReleves || [];
+  el.innerHTML = `
+    <div class="alert alert-info">🌡️ Tous les relevés de températures enregistrés lors des vérifications d'arrivée.</div>
+    <button class="btn btn-ghost" style="margin-bottom:14px" onclick="exportRelevesPDF()">📄 Exporter PDF</button>
+    ${DB.histReleves.length === 0
+      ? '<div class="empty"><div class="empty-icon">🌡️</div><div class="empty-text">Aucun relevé enregistré</div></div>'
+      : DB.histReleves.map(r => `
+        <div class="card" style="cursor:pointer;margin-bottom:10px" onclick="viewReleve(${r.id})">
+          <div class="card-row" style="margin-bottom:8px">
+            <div class="card-icon">🌡️</div>
+            <div class="card-info">
+              <div class="card-title">${r.date} — Service ${r.service}</div>
+              <div class="card-sub">Par ${r.by} · ${r.ts}</div>
+            </div>
+            <div class="badge ${r.statut==='OK'?'badge-green':'badge-red'}">${r.statut}</div>
+          </div>
+          ${r.temps.filter(t=>t.val!==null).map(t => {
+            const cls = t.val<=4?'badge-green':t.val<=6?'badge-orange':'badge-red';
+            return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid var(--border)">
+              <span style="font-size:12px;color:var(--text2)">${t.frigo}</span>
+              <span class="badge ${cls}">${t.val}°C</span>
+            </div>`;
+          }).join('')}
+        </div>`).join('')}`;
+}
+
+function viewReleve(id) {
+  DB.histReleves = DB.histReleves || [];
+  const r = DB.histReleves.find(x=>x.id===id); if (!r) return;
+  openModal(`🌡️ Relevé ${r.date} ${r.service}`, `
+    <div class="alert ${r.statut==='OK'?'alert-success':'alert-danger'}">
+      ${r.statut==='OK'?'✅ Toutes les températures conformes':'🚨 Anomalie détectée'}
+    </div>
+    <p class="stitle">Températures relevées</p>
+    ${r.temps.map(t => {
+      if (t.val===null) return `<div class="prod-row"><div class="prod-name">${t.frigo}</div><div class="badge" style="background:var(--surface3);color:var(--text2)">Non saisi</div></div>`;
+      const cls = t.val<=4?'badge-green':t.val<=6?'badge-orange':'badge-red';
+      return `<div class="prod-row"><div class="prod-name">${t.frigo}</div><div class="badge ${cls}">${t.val}°C</div></div>`;
+    }).join('')}
+    ${r.remarks ? `<div class="alert alert-info" style="margin-top:12px">💬 ${r.remarks}</div>` : ''}
+    <div style="font-size:12px;color:var(--text2);margin-top:12px">Par ${r.by} · ${r.ts}</div>
+  `);
+}
+
+function exportRelevesPDF() {
+  DB.histReleves = DB.histReleves || [];
+  const w = window.open('', '_blank');
+  w.document.write(`<html><head><title>Relevés températures — L'Embouchure</title>
+  <style>body{font-family:Lato,Arial,sans-serif;padding:20px}h1{font-size:16px;margin-bottom:16px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{background:#f5f5f5;padding:6px 8px;border:1px solid #ddd;text-align:left}
+  td{padding:6px 8px;border:1px solid #ddd}
+  .ok{color:green;font-weight:bold}.warn{color:orange;font-weight:bold}.bad{color:red;font-weight:bold}
+  </style></head><body>
+  <h1>🌡️ Relevés de températures — L'Embouchure</h1>
+  <table>
+    <tr><th>Date</th><th>Service</th><th>Par</th>${FRIGOS.map(f=>`<th>${f.split(' — ')[0]}</th>`).join('')}<th>Statut</th><th>Remarques</th></tr>
+    ${DB.histReleves.map(r => {
+      const cells = FRIGOS.map((_,i) => {
+        const t = r.temps[i];
+        if (!t||t.val===null) return '<td>—</td>';
+        const cls = t.val<=4?'ok':t.val<=6?'warn':'bad';
+        return `<td class="${cls}">${t.val}°C</td>`;
+      }).join('');
+      return `<tr><td>${r.date}</td><td>${r.service}</td><td>${r.by}</td>${cells}<td class="${r.statut==='OK'?'ok':'bad'}">${r.statut}</td><td>${r.remarks||'—'}</td></tr>`;
+    }).join('')}
+  </table></body></html>`);
   w.document.close(); w.print();
 }
 
